@@ -405,7 +405,7 @@ packages:
   s5_messenger:
     dependency: "direct main"
     description:
-      path: ".."
+      path: "../s5_messenger"
       relative: true
     source: path
     version: "0.0.1"

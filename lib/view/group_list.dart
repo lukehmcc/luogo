@@ -2,7 +2,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:lib5/util.dart';
 import 'package:flutter/services.dart';
-import 'package:s5_messenger_example/main.dart';
+import 'package:luogo/main.dart';
 
 class GroupListView extends StatefulWidget {
   const GroupListView({super.key});

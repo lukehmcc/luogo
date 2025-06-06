@@ -4,7 +4,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lib5/util.dart';
-import 'package:s5_messenger_example/main.dart';
+import 'package:luogo/main.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupChatView extends StatefulWidget {
@@ -106,12 +106,14 @@ class _GroupChatViewState extends State<GroupChatView> {
                         final res = await showTextInputDialog(
                           context: context,
                           textFields: [
-                            DialogTextField(hintText: 's5messenger-key-package:')
+                            DialogTextField(
+                                hintText: 's5messenger-key-package:')
                           ],
                         );
                         if (res == null) return;
                         final String kp = res.first;
-                        if (!kp.startsWith('s5messenger-key-package:')) throw 'TODO1';
+                        if (!kp.startsWith('s5messenger-key-package:'))
+                          throw 'TODO1';
                         final bytes = base64UrlNoPaddingDecode(
                           kp.substring(17),
                         );

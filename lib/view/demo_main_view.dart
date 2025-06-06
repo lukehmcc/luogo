@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:s5_messenger_example/main.dart';
+import 'package:luogo/main.dart';
 
 import 'group_chat.dart';
 import 'group_list.dart';

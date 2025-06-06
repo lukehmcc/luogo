@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:lib5/util.dart';
-import 'package:s5_messenger_example/view/demo_main_view.dart';
+import 'package:luogo/view/demo_main_view.dart';
 
 late S5 s5;
 late S5Messenger s5messenger;
