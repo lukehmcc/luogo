@@ -1,152 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:luogo/services/location_service.dart';
+import 'package:luogo/view/page/home.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:lib5/util.dart';
-import 'package:luogo/view/page/map.dart';
+import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart' as log;
 
+// Some global variables for easy of use
 late S5 s5;
 late S5Messenger s5messenger;
+late SharedPreferences prefs;
+late log.Logger logger;
+late LocationService locationService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Rust
-  await RustLib.init();
-  runApp(const MyApp());
+  prefs = await SharedPreferences.getInstance(); // Quick so init here
+  await RustLib.init(); // Init the rust bindings
+  logger = log.Logger(); // Define the logger
+  // Start the location service loop
+  await _initHive();
+  locationService = LocationService();
+  locationService.startPeriodicUpdates(intervalMinutes: 5);
+  _initializeDependencies();
+  runApp(const Luogo());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+Future<void> _initHive() async {
+  final dir =
+      await getApplicationDocumentsDirectory(); // Best for persistent data
+  Hive.init(path.join(dir.path, 'hive'));
+}
+
+// Initializes all the slow dependecies async
+Future<void> _initializeDependencies() async {
+  try {
+    // Initialize Hive
+
+    // Initialize S5
+    s5 = await S5.create(
+      initialPeers: [
+        'wss://z2DeVYsXdq3Rgt8252LRwNnreAtsGr3BN6FPc6Hvg6dTtRk@s5.jptr.tech/s5/p2p', // add my S5 node first
+        'wss://z2Das8aEF7oNoxkcrfvzerZ1iBPWfm6D7gy3hVE4ALGSpVB@node.sfive.net/s5/p2p',
+        'wss://z2DdbxV4xyoqWck5pXXJdVzRnwQC6Gbv6o7xDvyZvzKUfuj@s5.vup.dev/s5/p2p',
+        'wss://z2DWuWNZcdSyZLpXFK2uCU3haaWMXrDAgxzv17sDEMHstZb@s5.garden/s5/p2p',
+      ],
+      logger: SilentLogger(),
+    );
+
+    // Initialize S5Messenger
+    s5messenger = S5Messenger();
+    // await s5messenger.init(s5);
+  } catch (e) {
+    // Handle initialization errors
+    debugPrint('Initialization error: $e');
+    // You might want to show an error message to the user
+  }
+}
+
+class Luogo extends StatelessWidget {
+  const Luogo({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Luogo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const InitializationScreen(),
+      home: const HomePage(),
     );
-  }
-}
-
-class InitializationScreen extends StatefulWidget {
-  const InitializationScreen({super.key});
-
-  @override
-  State<InitializationScreen> createState() => _InitializationScreenState();
-}
-
-class _InitializationScreenState extends State<InitializationScreen> {
-  bool hiveInitialized = false;
-  bool s5Initialized = false;
-  bool messengerInitialized = false;
-  bool initializationComplete = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeDependencies();
-  }
-
-  Future<void> _initializeDependencies() async {
-    try {
-      // Initialize Hive
-      final dir =
-          await getApplicationDocumentsDirectory(); // Best for persistent data
-      Hive.init(dir.path);
-      setState(() => hiveInitialized = true);
-
-      // Initialize S5
-      s5 = await S5.create(
-        initialPeers: [
-          'wss://z2DeVYsXdq3Rgt8252LRwNnreAtsGr3BN6FPc6Hvg6dTtRk@s5.jptr.tech/s5/p2p', // add my S5 node first
-          'wss://z2Das8aEF7oNoxkcrfvzerZ1iBPWfm6D7gy3hVE4ALGSpVB@node.sfive.net/s5/p2p',
-          'wss://z2DdbxV4xyoqWck5pXXJdVzRnwQC6Gbv6o7xDvyZvzKUfuj@s5.vup.dev/s5/p2p',
-          'wss://z2DWuWNZcdSyZLpXFK2uCU3haaWMXrDAgxzv17sDEMHstZb@s5.garden/s5/p2p',
-        ],
-        logger: SilentLogger(),
-      );
-      setState(() => s5Initialized = true);
-
-      // Initialize S5Messenger
-      s5messenger = S5Messenger();
-      // await s5messenger.init(s5);
-      setState(() => messengerInitialized = true);
-
-      // All done
-      setState(() => initializationComplete = true);
-
-      // Navigate to home page
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MapView()),
-        );
-      }
-    } catch (e) {
-      // Handle initialization errors
-      debugPrint('Initialization error: $e');
-      // You might want to show an error message to the user
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Initializing App...',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
-            _buildInitializationStep('Hive Initialization', hiveInitialized),
-            _buildInitializationStep('S5 Initialization', s5Initialized),
-            _buildInitializationStep(
-              'Messenger Initialization',
-              messengerInitialized,
-            ),
-            if (initializationComplete) ...[
-              const SizedBox(height: 32),
-              const Text('Ready!', style: TextStyle(fontSize: 20)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInitializationStep(String label, bool isComplete) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          isComplete
-              ? const Icon(Icons.check_circle, color: Colors.green)
-              : const CircularProgressIndicator(),
-          const SizedBox(width: 16),
-          Text(label, style: const TextStyle(fontSize: 18)),
-        ],
-      ),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: Text("App has initialized")));
   }
 }
 

@@ -11,11 +11,17 @@ dependencies:
   flutter:
     sdk: flutter
   s5_messenger:
-    path: ../s5_messenger/
+    git: https://github.com/s5-dev/s5_messenger.git
+  s5:
+    git: 
+      url: https://github.com/lukehmcc/s5-dart.git
+      ref: 0.2.0-patched
+  lib5: 
+    git: 
+      url: https://github.com/lukehmcc/lib5.git
+      ref: 0.2.0-patched
   cupertino_icons: ^1.0.8
-  lib5: ^0.2.0
   hive: ^2.2.3
-  s5: ^0.2.0
   logger: ^2.5.0
   adaptive_dialog: ^2.4.1
   latlong2: ^0.9.1
@@ -24,6 +30,11 @@ dependencies:
   path_provider: ^2.1.5
   flutter_map_pmtiles: ^1.0.5
   maplibre_gl: ^0.22.0
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+  path: ^1.9.1
+  shared_preferences: ^2.5.3
+  geolocator: ^14.0.1
 
 dev_dependencies:
   flutter_test:

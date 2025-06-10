@@ -1,64 +1,54 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import '../bloc/map/map_bloc.dart';
+import '../bloc/map/map_state.dart';
+import '../bloc/map/map_event.dart';
 
-const _boston =
-    CameraPosition(target: LatLng(42.361145, -71.057083), zoom: 10.0);
-
-class MapView extends StatefulWidget {
+class MapView extends StatelessWidget {
   const MapView({super.key});
 
   @override
-  State<MapView> createState() => _MapViewState();
-}
-
-class _MapViewState extends State<MapView> {
-  final Completer<MapLibreMapController> mapController = Completer();
-  bool canInteractWithMap = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.miniCenterFloat,
-      floatingActionButton: canInteractWithMap
-          ? FloatingActionButton(
-              onPressed: _moveCameraToNullIsland,
-              mini: true,
-              child: const Icon(Icons.restore),
-            )
-          : null,
-      body: MapLibreMap(
-        onMapCreated: (controller) => mapController.complete(controller),
-        initialCameraPosition: _boston,
-        onStyleLoadedCallback: () => setState(() => canInteractWithMap = true),
-        styleString: "assets/pmtiles_style.json",
+    return BlocProvider(
+      create: (context) => MapBloc(),
+      child: Scaffold(
+        floatingActionButtonLocation:
+            FloatingActionButtonLocation.miniCenterFloat,
+        body: BlocBuilder<MapBloc, MapState>(
+          builder: (context, state) {
+            return Stack(
+              children: [
+                MapLibreMap(
+                  onMapCreated: (controller) =>
+                      context.read<MapBloc>().add(MapCreated(controller)),
+                  initialCameraPosition: const CameraPosition(
+                    target: LatLng(42.361145, -71.057083),
+                    zoom: 10.0,
+                  ),
+                  styleString: "assets/pmtiles_style.json",
+                ),
+                if (state is! MapReady)
+                  Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                if (state is MapReady)
+                  Positioned(
+                    bottom: 20,
+                    child: Center(
+                      child: FloatingActionButton(
+                        onPressed: () =>
+                            context.read<MapBloc>().add(const MoveToUser()),
+                        mini: true,
+                        child: const Icon(Icons.restore),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
-
-  void _moveCameraToNullIsland() => mapController.future
-      .then((c) => c.animateCamera(CameraUpdate.newCameraPosition(_boston)));
-
-  // late MapLibreMapController mapController;
-  //
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     body: MapLibreMap(
-  //       styleString: "https://demotiles.maplibre.org/style.json",
-  //       initialCameraPosition: const CameraPosition(
-  //         target: LatLng(51.509364, -0.128928), // London coordinates
-  //         zoom: 9.2,
-  //       ),
-  //       onMapCreated: _onMapCreated,
-  //     ),
-  //   );
-  // }
-  //
-  // void _onMapCreated(MapLibreMapController controller) {
-  //   mapController = controller;
-  //   // You can perform further map setup here if needed
-  // }
 }
