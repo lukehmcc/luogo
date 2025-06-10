@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:lib5/util.dart';
-import 'package:luogo/view/demo_main_view.dart';
+import 'package:luogo/view/page/map.dart';
 
 late S5 s5;
 late S5Messenger s5messenger;
@@ -52,7 +53,9 @@ class _InitializationScreenState extends State<InitializationScreen> {
   Future<void> _initializeDependencies() async {
     try {
       // Initialize Hive
-      Hive.init('data');
+      final dir =
+          await getApplicationDocumentsDirectory(); // Best for persistent data
+      Hive.init(dir.path);
       setState(() => hiveInitialized = true);
 
       // Initialize S5
@@ -69,7 +72,6 @@ class _InitializationScreenState extends State<InitializationScreen> {
 
       // Initialize S5Messenger
       s5messenger = S5Messenger();
-      await s5messenger.init(s5);
       // await s5messenger.init(s5);
       setState(() => messengerInitialized = true);
 
@@ -79,7 +81,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
       // Navigate to home page
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MLS5DemoAppView()),
+          MaterialPageRoute(builder: (context) => const MapView()),
         );
       }
     } catch (e) {

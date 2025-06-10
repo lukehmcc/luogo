@@ -18,6 +18,12 @@ dependencies:
   s5: ^0.2.0
   logger: ^2.5.0
   adaptive_dialog: ^2.4.1
+  latlong2: ^0.9.1
+  flutter_map: ^8.1.1
+  url_launcher: ^6.3.1
+  path_provider: ^2.1.5
+  flutter_map_pmtiles: ^1.0.5
+  maplibre_gl: ^0.22.0
 
 dev_dependencies:
   flutter_test:
@@ -28,3 +34,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/pmtiles_style.json
