@@ -1,5 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:luogo/view/page/map.dart';
+
+void _deleteHive() {
+  Hive.deleteFromDisk();
+}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -11,32 +17,62 @@ class HomePage extends StatelessWidget {
         backgroundColor: Colors.transparent,
       ),
       drawer: Drawer(
-        child: ListView(
-          // Important: Remove any padding from the ListView.
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            const DrawerHeader(
-              child: Text('Drawer Header'),
+            Expanded(
+              child: SingleChildScrollView(
+                // Scrollable content
+                child: Column(
+                  children: [
+                    const DrawerHeader(
+                      child: Text('Drawer Header'),
+                    ),
+                    ListTile(
+                      title: const Text('Item 1'),
+                      onTap: () {
+                        // Update the state of the app.
+                        // ...
+                      },
+                    ),
+                    ListTile(
+                      title: const Text('Item 2'),
+                      onTap: () {
+                        // Update the state of the app.
+                        // ...
+                      },
+                    ),
+                    // Add more items here if needed
+                  ],
+                ),
+              ),
             ),
-            ListTile(
-              title: const Text('Item 1'),
-              onTap: () {
-                // Update the state of the app.
-                // ...
-              },
-            ),
-            ListTile(
-              title: const Text('Item 2'),
-              onTap: () {
-                // Update the state of the app.
-                // ...
-              },
-            ),
+            // Fixed-positioned button at the bottom
+            if (kDebugMode)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Tooltip(
+                    message: "Nuke Hive",
+                    child: IconButton(
+                        icon: const Icon(Icons.delete), // Customize icon
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Hive nuked (debug only)"),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          Navigator.pop(context);
+                          _deleteHive();
+                        }),
+                  ),
+                ),
+              ),
           ],
         ),
-      ), // Hamburger menu
-      extendBodyBehindAppBar:
-          true, // Allows content to appear behind the AppBar
+      ),
+      extendBodyBehindAppBar: true,
       body: MapView(),
     );
   }

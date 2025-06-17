@@ -1,13 +1,28 @@
-// lib/services/location_service.dart
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/model/hive_latlng.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 
+/// A service for periodically fetching and storing the device's current location.
+///
+/// This service handles:
+/// - **Permission management**: Checks and requests location permissions
+/// - **Periodic updates**: Fetches location at configurable intervals
+/// - **Persistence**: Stores locations using Hive for offline access
+///
+/// ## Usage
+/// ```dart
+/// final locationService = LocationService();
+/// await locationService.startPeriodicUpdates(intervalMinutes: 10);
+/// // Remember to call dispose() when done
+/// ```
 class LocationService {
   Timer? _timer;
-  late Box<Position> locationBox;
+  late Box<HiveLatLng> locationBox;
 
+  /// Call this to start periodic location updates.
   Future<void> startPeriodicUpdates({int intervalMinutes = 5}) async {
     // Check permissions first
     bool hasPermission = await _checkLocationPermission();
@@ -22,11 +37,13 @@ class LocationService {
     );
   }
 
+  // Internal location fetcher
   Future<void> _fetchLocation() async {
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final Position position = await Geolocator.getCurrentPosition();
+      final LatLng latLng = LatLng(position.latitude, position.longitude);
       logger.d(position);
-      locationBox.put('local_position', position);
+      locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
     } catch (e) {
       logger.e('Error fetching location: $e');
     }
@@ -52,6 +69,10 @@ class LocationService {
       // Mark that we've asked, regardless of the user's choice
       await prefs.setBool('hasAskedLocationPermission', true);
     }
+
+    // Now that location has been allowed (hopefully), we fetch location to
+    // update the map
+    await _fetchLocation();
 
     // Return true only if permission is granted (while or after asking)
     return permission == LocationPermission.whileInUse ||

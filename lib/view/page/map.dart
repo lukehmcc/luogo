@@ -22,7 +22,7 @@ class MapView extends StatelessWidget {
                   onMapCreated: (controller) =>
                       context.read<MapCubit>().mapCreated(controller),
                   initialCameraPosition: const CameraPosition(
-                    target: LatLng(42.361145, -71.057083),
+                    target: LatLng(0, 0),
                     zoom: 10.0,
                   ),
                   styleString: "assets/pmtiles_style.json",
