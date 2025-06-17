@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import '../bloc/map/map_bloc.dart';
-import '../bloc/map/map_state.dart';
-import '../bloc/map/map_event.dart';
+import 'package:luogo/cubit/map/map_cubit.dart';
+import 'package:luogo/cubit/map/map_state.dart';
 
 class MapView extends StatelessWidget {
   const MapView({super.key});
@@ -11,17 +10,17 @@ class MapView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => MapBloc(),
+      create: (context) => MapCubit(),
       child: Scaffold(
         floatingActionButtonLocation:
             FloatingActionButtonLocation.miniCenterFloat,
-        body: BlocBuilder<MapBloc, MapState>(
+        body: BlocBuilder<MapCubit, MapState>(
           builder: (context, state) {
             return Stack(
               children: [
                 MapLibreMap(
                   onMapCreated: (controller) =>
-                      context.read<MapBloc>().add(MapCreated(controller)),
+                      context.read<MapCubit>().mapCreated(controller),
                   initialCameraPosition: const CameraPosition(
                     target: LatLng(42.361145, -71.057083),
                     zoom: 10.0,
@@ -29,16 +28,13 @@ class MapView extends StatelessWidget {
                   styleString: "assets/pmtiles_style.json",
                 ),
                 if (state is! MapReady)
-                  Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  const Center(child: CircularProgressIndicator()),
                 if (state is MapReady)
                   Positioned(
                     bottom: 20,
                     child: Center(
                       child: FloatingActionButton(
-                        onPressed: () =>
-                            context.read<MapBloc>().add(const MoveToUser()),
+                        onPressed: () => context.read<MapCubit>().moveToUser(),
                         mini: true,
                         child: const Icon(Icons.restore),
                       ),

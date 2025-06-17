@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/utils/s5_logger.dart';
 import 'package:luogo/view/page/home.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
-import 'package:lib5/util.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart' as log;
+import 'package:logger/logger.dart';
 
 // Some global variables for easy of use
 late S5 s5;
 late S5Messenger s5messenger;
 late SharedPreferences prefs;
-late log.Logger logger;
+late Logger logger;
 late LocationService locationService;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   prefs = await SharedPreferences.getInstance(); // Quick so init here
   await RustLib.init(); // Init the rust bindings
-  logger = log.Logger(); // Define the logger
+  logger = Logger(); // Define the logger
   // Start the location service loop
   await _initHive();
   locationService = LocationService();
   locationService.startPeriodicUpdates(intervalMinutes: 5);
-  _initializeDependencies();
+  // _initializeDependencies();
   runApp(const Luogo());
 }
 
@@ -74,45 +74,5 @@ class Luogo extends StatelessWidget {
       ),
       home: const HomePage(),
     );
-  }
-}
-
-// Quick change of: https://github.com/s5-dev/lib5/blob/main/lib/src/node/logger/simple.dart
-// Supresses spammy warns
-class SilentLogger extends Logger {
-  final String prefix;
-  final bool format;
-  final bool showVerbose;
-
-  SilentLogger({
-    this.prefix = '',
-    this.format = true,
-    this.showVerbose = false,
-  });
-
-  @override
-  void info(String s) {
-    print(prefix + s.replaceAll(RegExp('\u001b\\[\\d+m'), ''));
-  }
-
-  @override
-  void error(String s) {
-    print('$prefix[ERROR] $s');
-  }
-
-  @override
-  void verbose(String s) {
-    if (!showVerbose) return;
-    print(prefix + s);
-  }
-
-  @override
-  void warn(String s) {
-    // Silent - no output
-  }
-
-  @override
-  void catched(e, st, [context]) {
-    // Silent - no output
   }
 }
