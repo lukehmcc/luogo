@@ -49,3 +49,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/pmtiles_style.json
+    - assets/pin.png

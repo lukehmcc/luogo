@@ -1,17 +1,16 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_state.dart';
 import 'package:luogo/main.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class MapCubit extends Cubit<MapState> {
   MapCubit() : super(MapInitial()) {
     // Initialize the position watcher
-    final _positionWatcher = locationService.locationBox
-        .watch(key: 'local_position')
-        .listen((event) {
-      logger.d("callback activated");
+    locationService.locationBox.watch(key: 'local_position').listen((event) {
       // First parse the info
       if (event.value == null) {
         return;
@@ -45,7 +44,6 @@ class MapCubit extends Cubit<MapState> {
   // Vars
   Completer<MapLibreMapController> mapController = Completer();
   LatLng? _userPosition; // Store position for later use
-  LatLng? _currentMapPosition; // Stores the current map position
   late StreamSubscription<BoxEvent> _positionWatcher;
 
   // Getters
@@ -54,16 +52,19 @@ class MapCubit extends Cubit<MapState> {
   // Funcitons
   void mapCreated(MapLibreMapController controller) async {
     mapController.complete(controller);
-    // Set up camera location listener
-    // controller.addListener(() {
-    //   if (controller.isCameraMoving) {
-    //     logger.d("Camera moving!");
-    //   }
-    // });
     emit(MapReady());
     if (_userPosition != null) {
       await moveToUser(); // Auto-center on user location
     }
+
+    // Now add personal users
+    // TODO Make a better way to handle this and others
+    // TODO Handle filling in the circle
+    // First load in the image
+    await addImageFromAsset(controller, "pin-drop", "assets/pin.png");
+    //Now go through and put it on the map
+    Symbol _ = await controller.addSymbol(SymbolOptions(
+        geometry: _userPosition, iconImage: "pin-drop", iconSize: 1.0));
   }
 
   Future<void> moveToUser() async {
