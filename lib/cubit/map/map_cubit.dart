@@ -78,7 +78,10 @@ class MapCubit extends Cubit<MapState> {
     await addImageFromAsset(controller, "pin-drop", "assets/pin.png");
     //Now go through and put it on the map
     _userSymbol = await controller.addSymbol(SymbolOptions(
-        geometry: _userPosition, iconImage: "pin-drop", iconSize: 1.0));
+        geometry: _userPosition,
+        iconImage: "pin-drop",
+        iconSize: 1.0,
+        iconAnchor: 'bottom'));
   }
 
   Future<void> moveToUser() async {
