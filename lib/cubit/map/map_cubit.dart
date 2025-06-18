@@ -36,7 +36,6 @@ class MapCubit extends Cubit<MapState> {
 
       // And if the position should be updated, update it
       if (isCentered || firstGo) {
-        logger.d("is centered");
         // update the camera position
         updateCamera(event.value.toLatLng());
         if (_userSymbol != null) {
@@ -45,8 +44,6 @@ class MapCubit extends Cubit<MapState> {
           controller.updateSymbol(
               _userSymbol!, SymbolOptions(geometry: _userPosition));
         }
-      } else {
-        logger.d("is not centered");
       }
     });
   }

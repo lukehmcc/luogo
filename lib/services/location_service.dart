@@ -25,9 +25,9 @@ class LocationService {
   /// Call this to start periodic location updates.
   Future<void> startPeriodicUpdates({int intervalSeconds = 5}) async {
     // Check permissions first
+    locationBox = await Hive.openBox('location');
     bool hasPermission = await _checkLocationPermission();
     if (!hasPermission) return;
-    locationBox = await Hive.openBox('location');
 
     // Fetch immediately
     _fetchLocation();
