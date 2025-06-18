@@ -25,7 +25,7 @@ void main() async {
   // Start the location service loop
   await _initHive();
   locationService = LocationService();
-  await locationService.startPeriodicUpdates(intervalMinutes: 5);
+  await locationService.startPeriodicUpdates(intervalSeconds: 5);
   // _initS5();
   runApp(const Luogo());
 }

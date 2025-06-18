@@ -15,7 +15,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 /// ## Usage
 /// ```dart
 /// final locationService = LocationService();
-/// await locationService.startPeriodicUpdates(intervalMinutes: 10);
+/// await locationService.startPeriodicUpdates(intervalSeconds: 10);
 /// // Remember to call dispose() when done
 /// ```
 class LocationService {
@@ -23,21 +23,24 @@ class LocationService {
   late Box<HiveLatLng> locationBox;
 
   /// Call this to start periodic location updates.
-  Future<void> startPeriodicUpdates({int intervalMinutes = 5}) async {
+  Future<void> startPeriodicUpdates({int intervalSeconds = 5}) async {
     // Check permissions first
     bool hasPermission = await _checkLocationPermission();
     if (!hasPermission) return;
     locationBox = await Hive.openBox('location');
 
-    // Fetch immediately, then every `intervalMinutes`
+    // Fetch immediately
     _fetchLocation();
-    _timer = Timer.periodic(
-      Duration(minutes: intervalMinutes),
-      (_) => _fetchLocation(),
-    );
+
+    // Watch for continuing location updates
+    Geolocator.getPositionStream().listen((Position position) {
+      final LatLng latLng = LatLng(position.latitude, position.longitude);
+      logger.d("NEW POSITION: $position");
+      locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
+    });
   }
 
-  // Internal location fetcher
+  // Internal location fetcher for oneshots
   Future<void> _fetchLocation() async {
     try {
       final Position position = await Geolocator.getCurrentPosition();

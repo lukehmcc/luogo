@@ -22,9 +22,10 @@ class MapView extends StatelessWidget {
                   onMapCreated: (controller) =>
                       context.read<MapCubit>().mapCreated(controller),
                   initialCameraPosition: const CameraPosition(
-                    target: LatLng(0, 0),
+                    target: LatLng(1, 1),
                     zoom: 10.0,
                   ),
+                  trackCameraPosition: true,
                   styleString: "assets/pmtiles_style.json",
                 ),
                 if (state is! MapReady)

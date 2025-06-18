@@ -5,32 +5,48 @@ import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_state.dart';
 import 'package:luogo/main.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
 class MapCubit extends Cubit<MapState> {
   MapCubit() : super(MapInitial()) {
     // Initialize the position watcher
-    locationService.locationBox.watch(key: 'local_position').listen((event) {
+    locationService.locationBox
+        .watch(key: 'local_position')
+        .listen((event) async {
       // First parse the info
       if (event.value == null) {
         return;
       }
-      logger.d("value not null");
-      final newLocaiton = event.value.toLatLng();
       // First check if the user is centered
-      bool isCentered = (_userPosition?.latitude ?? 0 - newLocaiton.latitude)
-                  .abs() <
-              0.0001 &&
-          (userPosition?.longitude ?? 0 - newLocaiton.longitude).abs() < 0.0001;
+      final CameraPosition? cameraPosition =
+          (await mapController.future).cameraPosition;
+      final double camLat = cameraPosition?.target.latitude ?? 0;
+      final double camLong = cameraPosition?.target.longitude ?? 0;
+      final double userLat = _userPosition?.latitude ?? 0;
+      final double userLong = _userPosition?.longitude ?? 0;
+      bool isCentered = (userLat - camLat).abs() < 0.0001 &&
+          (userLong - camLong).abs() < 0.0001;
+
       // Also check if it is the first time a location is being written (always want to center then)
       bool firstGo = _userPosition == null;
+
       // Then update the user position
       if (event.value != null) {
         _userPosition = event.value.toLatLng();
       }
+
       // And if the position should be updated, update it
       if (isCentered || firstGo) {
+        logger.d("is centered");
+        // update the camera position
         updateCamera(event.value.toLatLng());
+        if (_userSymbol != null) {
+          // And update the pin location
+          final controller = await mapController.future;
+          controller.updateSymbol(
+              _userSymbol!, SymbolOptions(geometry: _userPosition));
+        }
+      } else {
+        logger.d("is not centered");
       }
     });
   }
@@ -45,6 +61,7 @@ class MapCubit extends Cubit<MapState> {
   Completer<MapLibreMapController> mapController = Completer();
   LatLng? _userPosition; // Store position for later use
   late StreamSubscription<BoxEvent> _positionWatcher;
+  Symbol? _userSymbol; // Store local user symbol to be moved
 
   // Getters
   LatLng? get userPosition => _userPosition;
@@ -63,7 +80,7 @@ class MapCubit extends Cubit<MapState> {
     // First load in the image
     await addImageFromAsset(controller, "pin-drop", "assets/pin.png");
     //Now go through and put it on the map
-    Symbol _ = await controller.addSymbol(SymbolOptions(
+    _userSymbol = await controller.addSymbol(SymbolOptions(
         geometry: _userPosition, iconImage: "pin-drop", iconSize: 1.0));
   }
 
