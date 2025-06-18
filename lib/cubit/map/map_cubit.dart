@@ -34,16 +34,18 @@ class MapCubit extends Cubit<MapState> {
         _userPosition = event.value.toLatLng();
       }
 
-      // And if the position should be updated, update it
+      // And if the position hasn't been editied of the camera, move it
       if (isCentered || firstGo) {
         // update the camera position
         updateCamera(event.value.toLatLng());
-        if (_userSymbol != null) {
-          // And update the pin location
-          final controller = await mapController.future;
-          controller.updateSymbol(
-              _userSymbol!, SymbolOptions(geometry: _userPosition));
-        }
+      }
+
+      // But always move the pin if there's a valid location
+      if (_userSymbol != null) {
+        // And update the pin location
+        final controller = await mapController.future;
+        controller.updateSymbol(
+            _userSymbol!, SymbolOptions(geometry: _userPosition));
       }
     });
   }
@@ -66,6 +68,7 @@ class MapCubit extends Cubit<MapState> {
   // Funcitons
   void mapCreated(MapLibreMapController controller) async {
     mapController.complete(controller);
+    controller.onSymbolTapped.add(_onSymbolTapped);
     emit(MapReady());
     if (_userPosition != null) {
       await moveToUser(); // Auto-center on user location
@@ -82,6 +85,11 @@ class MapCubit extends Cubit<MapState> {
         iconImage: "pin-drop",
         iconSize: 1.0,
         iconAnchor: 'bottom'));
+  }
+
+  void _onSymbolTapped(Symbol symbol) {
+    emit(MapSymbolClicked(symbolID: symbol.id));
+    logger.d("Tapped Symbol: $symbol");
   }
 
   Future<void> moveToUser() async {
