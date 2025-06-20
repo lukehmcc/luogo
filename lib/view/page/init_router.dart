@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/init_router/init_router_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
+import 'package:luogo/view/page/create_profile.dart';
 import 'package:luogo/view/page/home.dart';
-import 'package:luogo/view/page/login.dart';
 
 class InitRouterPage extends StatelessWidget {
   const InitRouterPage({super.key});
@@ -31,7 +31,9 @@ class InitRouterPage extends StatelessWidget {
   }
 
   void _navigateBasedOnRoute(BuildContext context, RouteType route) {
-    final page = route == RouteType.home ? const HomePage() : const LoginPage();
+    final page =
+        route == RouteType.home ? const HomePage() : const CreateProfilePage();
+
     Navigator.pushAndRemoveUntil(context,
         MaterialPageRoute(builder: (context) => page), (route) => false);
   }

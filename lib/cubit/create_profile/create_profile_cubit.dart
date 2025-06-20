@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/login/login_state.dart';
+import 'package:luogo/cubit/create_profile/create_profile_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Generates a random color so if the user doesn't pick it isn't always the same
@@ -23,27 +23,29 @@ Color getRandomLightColor() {
 }
 
 // Cubit for state management
-class LoginCubit extends Cubit<LoginState> {
-  LoginCubit() : super(LoginInitial()) {
+class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
+  CreateProfilePageCubit() : super(CreateProfileInitial()) {
     selectedColor = getRandomLightColor();
+    pickerColor = selectedColor;
     nameController.addListener(() {
-      emit(LoginTextEdited());
+      emit(CreateProfileTextEdited());
     });
   }
 
   final TextEditingController nameController = TextEditingController();
   Color? selectedColor;
+  Color? pickerColor;
 
-  void selectColor(Color color) {
+  // Callback for when color is updated from the picker
+  void onColorPicked(Color color) {
     selectedColor = color;
-    emit(LoginColorSelected(color));
+    emit(CreateProfileColorChanged());
   }
 
-  Future<void> savePreferences(BuildContext context) async {
+  // If everything is okay, save the settings to prefs so you can move on
+  Future<void> savePreferences() async {
     if (nameController.text.isEmpty || selectedColor == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both name and color')),
-      );
+      emit(CreateProfileError('Please enter both name and color'));
       return;
     }
 
@@ -51,9 +53,9 @@ class LoginCubit extends Cubit<LoginState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('userName', nameController.text);
       await prefs.setInt('userColor', selectedColor?.toARGB32() ?? 0);
-      emit(LoginSuccess());
+      emit(CreateProfileSuccess());
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(CreateProfileError(e.toString()));
     }
   }
 }
