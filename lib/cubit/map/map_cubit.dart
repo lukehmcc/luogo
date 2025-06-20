@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/utils/mapping.dart';
@@ -77,8 +78,12 @@ class MapCubit extends Cubit<MapState> {
     // Now add personal users
     // TODO Make a better way to handle this and others
     // TODO Handle filling in the circle
-    // First load in the image
-    await addImageFromAsset(controller, "pin-drop", "assets/pin.png");
+    // First load in the image (and get user prefs)
+    String? name = prefs.getString('name');
+    int colorValue = prefs.getInt('color') ?? 0;
+    Color selectedColor = Color(colorValue);
+    await addImageFromAsset(controller, "pin-drop", "assets/pin.png",
+        selectedColor, name?[0] ?? "");
     //Now go through and put it on the map
     _userSymbol = await controller.addSymbol(SymbolOptions(
         geometry: _userPosition,
