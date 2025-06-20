@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/hive/hive_registrar.g.dart';
 import 'package:luogo/services/location_service.dart';
-import 'package:luogo/view/page/home.dart';
+import 'package:luogo/view/page/init_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
@@ -72,7 +72,7 @@ class Luogo extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const HomePage(),
+      home: const InitRouterPage(),
     );
   }
 }

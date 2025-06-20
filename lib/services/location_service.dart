@@ -35,7 +35,6 @@ class LocationService {
     // Watch for continuing location updates
     Geolocator.getPositionStream().listen((Position position) {
       final LatLng latLng = LatLng(position.latitude, position.longitude);
-      logger.d("NEW POSITION: $position");
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
     });
   }
@@ -45,7 +44,6 @@ class LocationService {
     try {
       final Position position = await Geolocator.getCurrentPosition();
       final LatLng latLng = LatLng(position.latitude, position.longitude);
-      logger.d(position);
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
     } catch (e) {
       logger.e('Error fetching location: $e');
