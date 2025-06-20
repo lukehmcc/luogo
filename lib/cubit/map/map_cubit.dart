@@ -85,6 +85,7 @@ class MapCubit extends Cubit<MapState> {
         iconImage: "pin-drop",
         iconSize: 1.0,
         iconAnchor: 'bottom'));
+    logger.d("added image asset");
   }
 
   void _onSymbolTapped(Symbol symbol) {

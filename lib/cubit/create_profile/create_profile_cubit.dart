@@ -51,8 +51,8 @@ class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userName', nameController.text);
-      await prefs.setInt('userColor', selectedColor?.toARGB32() ?? 0);
+      await prefs.setString('name', nameController.text);
+      await prefs.setInt('color', selectedColor?.toARGB32() ?? 0);
       emit(CreateProfileSuccess());
     } catch (e) {
       emit(CreateProfileError(e.toString()));
