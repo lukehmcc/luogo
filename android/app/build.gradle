@@ -11,12 +11,12 @@ android {
     ndkVersion = "28.1.13356709" // For maplibre_gl
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_7
-        targetCompatibility = JavaVersion.VERSION_1_7
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_7
+        jvmTarget = JavaVersion.VERSION_1_8
     }
 
     defaultConfig {
