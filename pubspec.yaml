@@ -11,12 +11,15 @@ dependencies:
   flutter:
     sdk: flutter
   s5_messenger:
+    # path: ../s5-things/s5_messenger/
     git: https://github.com/s5-dev/s5_messenger.git
   s5:
+    # path: ../s5-things/s5-dart/
     git: 
       url: https://github.com/lukehmcc/s5-dart.git
       ref: 0.2.0-patched
   lib5: 
+    # path: ../s5-things/lib5/
     git: 
       url: https://github.com/lukehmcc/lib5.git
       ref: 0.2.0-patched

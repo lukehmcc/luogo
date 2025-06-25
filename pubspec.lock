@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: e55636ed79578b9abca5fecf9437947798f5ef7456308b5cb85720b793eac92f
+      sha256: ef06759dc1bc07f900a323b5a4c667aaa23c62704c26d8bdd22a18fd3ec04f6a
       url: "https://pub.dev"
     source: hosted
-    version: "82.0.0"
+    version: "84.0.0"
   adaptive_dialog:
     dependency: "direct main"
     description:
@@ -21,10 +21,10 @@ packages:
     dependency: transitive
     description:
       name: analyzer
-      sha256: "904ae5bb474d32c38fb9482e2d925d5454cda04ddd0e55d2e6826bc72f6ba8c0"
+      sha256: c1e56e205548fa834b96925837dc45d463d433a40597e7004273af5db0d4c52e
       url: "https://pub.dev"
     source: hosted
-    version: "7.4.5"
+    version: "7.5.0"
   animations:
     dependency: transitive
     description:
@@ -596,7 +596,7 @@ packages:
     description:
       path: "."
       ref: "0.2.0-patched"
-      resolved-ref: "1ac7b21f6a35b489a0743ed522a33fab2d3c51a6"
+      resolved-ref: "37381055b696edb1f6d9ff6d917e3bbf6ac5fa92"
       url: "https://github.com/lukehmcc/lib5.git"
     source: git
     version: "0.2.0"
@@ -902,10 +902,10 @@ packages:
     description:
       path: "."
       ref: "0.2.0-patched"
-      resolved-ref: "60a6daa058513c66f1011e5ddb276c5ee724be7d"
+      resolved-ref: ba10c8e0f41a0fc65061d7c5ead7a8fea8b5e374
       url: "https://github.com/lukehmcc/s5-dart.git"
     source: git
-    version: "0.2.1"
+    version: "0.2.2"
   s5_messenger:
     dependency: "direct main"
     description:
