@@ -51,6 +51,7 @@ class MainCubit extends Cubit<MainState> {
             (await getApplicationDocumentsDirectory()).path, 'persist.json'),
       );
       s5messenger = S5Messenger();
+      await s5messenger.init(s5);
       emit(MainStateHeavyInitialized(
         s5: s5,
         s5messenger: s5messenger,
