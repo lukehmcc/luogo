@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:logger/logger.dart';
 import 'package:luogo/cubit/create_profile/create_profile_cubit.dart';
 import 'package:luogo/cubit/create_profile/create_profile_state.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateProfilePage extends StatelessWidget {
-  const CreateProfilePage({super.key});
+  final SharedPreferences prefs;
+  final Logger logger;
+  final LocationService locationService;
+  const CreateProfilePage(
+      {super.key,
+      required this.prefs,
+      required this.logger,
+      required this.locationService});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-        create: (context) => CreateProfilePageCubit(),
+    return BlocProvider<CreateProfilePageCubit>(
+        create: (BuildContext context) => CreateProfilePageCubit(prefs: prefs),
         // Put a blocListener here to handle incoming messages
         child: BlocListener<CreateProfilePageCubit, CreateProfilePageState>(
-          listener: (context, state) {
+          listener: (BuildContext context, CreateProfilePageState state) {
             // If the login is not sucsessful, let the user know
             if (state is CreateProfileError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -26,10 +36,15 @@ class CreateProfilePage extends StatelessWidget {
             }
             // If it is sucsessful, then push them through to the homepage
             if (state is CreateProfileSuccess) {
-              Navigator.pushAndRemoveUntil(
+              Navigator.pushAndRemoveUntil<dynamic>(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                  (route) => false);
+                  MaterialPageRoute<dynamic>(
+                      builder: (BuildContext context) => HomePage(
+                            prefs: prefs,
+                            logger: logger,
+                            locationService: locationService,
+                          )),
+                  (Route<dynamic> route) => false);
             }
           },
           // Then actually build the app here
@@ -39,7 +54,7 @@ class CreateProfilePage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: <Widget>[
                   BlocBuilder<CreateProfilePageCubit, CreateProfilePageState>(
                     builder: (context, state) {
                       final cubit = context.read<CreateProfilePageCubit>();

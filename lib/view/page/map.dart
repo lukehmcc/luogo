@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/cubit/map/map_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// MapView is the main maplibre/protomaps map that this app uses
 class MapView extends StatelessWidget {
-  const MapView({super.key});
+  final LocationService locationService;
+  final Logger logger;
+  final SharedPreferences prefs;
+  const MapView({
+    super.key,
+    required this.locationService,
+    required this.logger,
+    required this.prefs,
+  });
 
   @override
   Widget build(BuildContext context) {
     // Use BlocProvider to handle cubit state
     return BlocProvider(
-        create: (context) => MapCubit(),
+        create: (context) => MapCubit(
+            locationService: locationService, prefs: prefs, logger: logger),
         child: Scaffold(
           floatingActionButtonLocation:
               FloatingActionButtonLocation.miniCenterFloat,

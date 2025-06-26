@@ -1,9 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/home_state.dart';
-import 'package:luogo/main.dart';
+import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupsCubit extends Cubit<GroupsState> {
-  GroupsCubit() : super(GroupsInitial()) {
+  final S5Messenger s5messenger;
+
+  GroupsCubit({required this.s5messenger}) : super(GroupsInitial()) {
     loadGroups();
   }
 

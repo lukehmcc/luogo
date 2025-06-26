@@ -1,32 +1,67 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/home/home_state.dart';
-import 'package:luogo/main.dart';
+import 'package:luogo/cubit/main/main_cubit.dart';
+import 'package:luogo/cubit/main/main_state.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
+import 'package:s5_messenger/s5_messenger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final SharedPreferences prefs;
+  final Logger logger;
+  final LocationService locationService;
+
+  const HomePage(
+      {super.key,
+      required this.prefs,
+      required this.logger,
+      required this.locationService});
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Colors.transparent),
+      extendBodyBehindAppBar: true,
+      body: MapView(
+        // Map loads immediately
+        locationService: locationService,
+        logger: logger,
+        prefs: prefs,
+      ),
+      drawer: BlocBuilder<MainCubit, MainState>(
+        // Drawer waits for s5messenger
+        builder: (context, mainState) {
+          return switch (mainState) {
+            MainStateHeavyInitialized(:final s5messenger) =>
+              _buildGroupsDrawer(s5messenger),
+            _ => const Drawer(
+                // Show loading drawer
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          };
+        },
+      ),
+    );
+  }
+
+  Widget _buildGroupsDrawer(S5Messenger s5messenger) {
     return BlocProvider(
-      create: (context) => GroupsCubit(),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-        ),
-        drawer: const GroupsDrawer(),
-        extendBodyBehindAppBar: true,
-        body: MapView(),
+      create: (context) => GroupsCubit(s5messenger: s5messenger),
+      child: GroupsDrawer(
+        s5messenger: s5messenger,
       ),
     );
   }
 }
 
 class GroupsDrawer extends StatelessWidget {
-  const GroupsDrawer({super.key});
+  final S5Messenger s5messenger;
+  const GroupsDrawer({super.key, required this.s5messenger});
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +90,10 @@ class GroupsDrawer extends StatelessWidget {
                   return Center(child: Text(state.message));
                 }
                 if (state is GroupsLoaded) {
-                  return GroupListView(groups: state.groups);
+                  return GroupListView(
+                    groups: state.groups,
+                    s5messenger: s5messenger,
+                  );
                 }
                 return const SizedBox(); // Initial state
               },
@@ -69,8 +107,10 @@ class GroupsDrawer extends StatelessWidget {
 
 class GroupListView extends StatelessWidget {
   final List<dynamic> groups;
+  final S5Messenger s5messenger;
 
-  const GroupListView({super.key, required this.groups});
+  const GroupListView(
+      {super.key, required this.groups, required this.s5messenger});
 
   @override
   Widget build(BuildContext context) {

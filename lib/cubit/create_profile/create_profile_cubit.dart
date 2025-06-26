@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/create_profile/create_profile_state.dart';
-import 'package:luogo/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Generates a random color so if the user doesn't pick it isn't always the same
 Color getRandomLightColor() {
@@ -24,7 +24,10 @@ Color getRandomLightColor() {
 
 // Cubit for state management
 class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
-  CreateProfilePageCubit() : super(CreateProfileInitial()) {
+  final SharedPreferences prefs;
+
+  CreateProfilePageCubit({required this.prefs})
+      : super(CreateProfileInitial()) {
     selectedColor = getRandomLightColor();
     pickerColor = selectedColor;
     nameController.addListener(() {

@@ -1,38 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
 import 'package:luogo/cubit/init_router/init_router_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
+import 'package:luogo/cubit/main/main_cubit.dart';
+import 'package:luogo/cubit/main/main_state.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/create_profile.dart';
 import 'package:luogo/view/page/home.dart';
+import 'package:luogo/view/page/silly_progress_indicator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class InitRouterPage extends StatelessWidget {
   const InitRouterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<MainCubit, MainState>(builder: (context, mainState) {
+      return switch (mainState) {
+        MainStateInitial() => const SillyCircularProgressIndicator(),
+        MainStateLoading() => const SillyCircularProgressIndicator(),
+        MainStateError(:final message) => Center(child: Text(message)),
+        MainStateLightInitialized(
+          :final prefs,
+          :final logger,
+          :final locationService
+        ) =>
+          _buildInitRouterPage(context, prefs, logger, locationService),
+        MainStateHeavyInitialized(
+          :final prefs,
+          :final logger,
+          :final locationService
+        ) =>
+          _buildInitRouterPage(context, prefs, logger, locationService),
+      };
+    });
+  }
+
+  Widget _buildInitRouterPage(BuildContext context, SharedPreferences prefs,
+      Logger logger, LocationService locationService) {
     return BlocProvider(
-      create: (context) => InitRouterCubit()..checkPreferences(),
+      create: (context) => InitRouterCubit(prefs: prefs)..checkPreferences(),
       child: BlocListener<InitRouterCubit, InitRouterState>(
         listener: (context, state) {
           if (state is InitRouterSuccess) {
-            _navigateBasedOnRoute(context, state.route);
+            _navigateBasedOnRoute(
+                context, state.route, prefs, logger, locationService);
           }
         },
-        child: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [Text("Routing..."), CircularProgressIndicator()],
-            ),
-          ),
-        ),
+        child: SillyCircularProgressIndicator(),
       ),
     );
   }
 
-  void _navigateBasedOnRoute(BuildContext context, RouteType route) {
-    final page =
-        route == RouteType.home ? const HomePage() : const CreateProfilePage();
+  void _navigateBasedOnRoute(BuildContext context, RouteType route,
+      SharedPreferences prefs, Logger logger, LocationService locationService) {
+    final page = route == RouteType.home
+        ? HomePage(
+            prefs: prefs,
+            logger: logger,
+            locationService: locationService,
+          )
+        : CreateProfilePage(
+            prefs: prefs,
+            logger: logger,
+            locationService: locationService,
+          );
 
     Navigator.pushAndRemoveUntil(context,
         MaterialPageRoute(builder: (context) => page), (route) => false);

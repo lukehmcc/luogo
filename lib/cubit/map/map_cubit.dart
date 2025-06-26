@@ -2,13 +2,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:logger/logger.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_state.dart';
-import 'package:luogo/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+/// Manages map state and interactions, including user location tracking and symbol handling.
+/// Integrates with MapLibre for map rendering and Hive for location updates.
 class MapCubit extends Cubit<MapState> {
-  MapCubit() : super(MapInitial()) {
+  final LocationService locationService;
+  final SharedPreferences prefs;
+  final Logger logger;
+
+  MapCubit(
+      {required this.locationService,
+      required this.prefs,
+      required this.logger})
+      : super(MapInitial()) {
     // Initialize the position watcher
     locationService.locationBox
         .watch(key: 'local_position')

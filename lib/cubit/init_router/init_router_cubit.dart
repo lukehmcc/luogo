@@ -1,10 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
-import 'package:luogo/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Simple logic that checks if user has been initialized
 class InitRouterCubit extends Cubit<InitRouterState> {
-  InitRouterCubit() : super(InitRouterInitial());
+  final SharedPreferences prefs;
+
+  InitRouterCubit({required this.prefs}) : super(InitRouterInitial());
 
   Future<void> checkPreferences() async {
     // Emit that it is loading
