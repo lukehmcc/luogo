@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:logger/logger.dart';
+import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -14,13 +14,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MapCubit extends Cubit<MapState> {
   final LocationService locationService;
   final SharedPreferences prefs;
-  final Logger logger;
 
-  MapCubit(
-      {required this.locationService,
-      required this.prefs,
-      required this.logger})
-      : super(MapInitial()) {
+  MapCubit({
+    required this.locationService,
+    required this.prefs,
+  }) : super(MapInitial()) {
     // Initialize the position watcher
     locationService.locationBox
         .watch(key: 'local_position')

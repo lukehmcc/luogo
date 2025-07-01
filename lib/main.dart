@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/view/page/init_router.dart';
+
+// This is my only global var, as no init process
+final Logger logger = Logger();
 
 /// Main fucntion that starts everything. Utilizes a Cubit to handle state
 void main() async {

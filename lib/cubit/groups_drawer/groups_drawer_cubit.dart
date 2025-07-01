@@ -1,21 +1,22 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/home/home_state.dart';
+import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
-class GroupsCubit extends Cubit<GroupsState> {
+class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   final S5Messenger s5messenger;
 
-  GroupsCubit({required this.s5messenger}) : super(GroupsInitial()) {
+  GroupsDrawerCubit({required this.s5messenger})
+      : super(GroupsDrawerInitial()) {
     loadGroups();
   }
 
   Future<void> loadGroups() async {
-    emit(GroupsLoading());
+    emit(GroupsDrawerLoading());
     try {
       final groups = s5messenger.groupsBox.values.toList();
-      emit(GroupsLoaded(groups));
+      emit(GroupsDrawerLoaded(groups));
     } catch (e) {
-      emit(GroupsError(e.toString()));
+      emit(GroupsDrawerError(e.toString()));
     }
   }
 
@@ -24,7 +25,7 @@ class GroupsCubit extends Cubit<GroupsState> {
       await s5messenger.createNewGroup();
       loadGroups(); // Refresh the list
     } catch (e) {
-      emit(GroupsError(e.toString()));
+      emit(GroupsDrawerError(e.toString()));
     }
   }
 
@@ -39,7 +40,7 @@ class GroupsCubit extends Cubit<GroupsState> {
       s5messenger.group(groupId).rename(newName);
       loadGroups(); // Refresh the list
     } catch (e) {
-      emit(GroupsError(e.toString()));
+      emit(GroupsDrawerError(e.toString()));
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:logger/logger.dart';
+import 'package:luogo/main.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,9 +23,8 @@ class LocationService {
   Timer? _timer;
   late Box<HiveLatLng> locationBox;
   final SharedPreferences prefs;
-  final Logger logger;
 
-  LocationService({required this.prefs, required this.logger});
+  LocationService({required this.prefs});
 
   /// Call this to start periodic location updates.
   Future<void> startPeriodicUpdates({int intervalSeconds = 5}) async {

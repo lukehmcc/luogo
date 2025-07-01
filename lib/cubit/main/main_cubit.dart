@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/hive/hive_registrar.g.dart';
+import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/utils/s5_logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,7 +17,6 @@ class MainCubit extends Cubit<MainState> {
   late final S5 s5;
   late final S5Messenger s5messenger;
   late final SharedPreferences prefs;
-  late final Logger logger;
   late final LocationService locationService;
 
   Future<void> initializeApp() async {
@@ -28,15 +27,14 @@ class MainCubit extends Cubit<MainState> {
       // Do the quick dependencies
       prefs = await SharedPreferences.getInstance();
       await RustLib.init();
-      logger = Logger();
       final dir = await getApplicationDocumentsDirectory();
       Hive
         ..init(path.join(dir.path, 'hive'))
         ..registerAdapters();
-      locationService = LocationService(prefs: prefs, logger: logger);
+      locationService = LocationService(prefs: prefs);
       await locationService.startPeriodicUpdates(intervalSeconds: 5);
       emit(MainStateLightInitialized(
-          prefs: prefs, logger: logger, locationService: locationService));
+          prefs: prefs, locationService: locationService));
 
       // Do the slower dependeinces
       s5 = await S5.create(
@@ -56,7 +54,6 @@ class MainCubit extends Cubit<MainState> {
         s5: s5,
         s5messenger: s5messenger,
         prefs: prefs,
-        logger: logger,
         locationService: locationService,
       ));
     } catch (e) {

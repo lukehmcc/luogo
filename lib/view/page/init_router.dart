@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:logger/logger.dart';
 import 'package:luogo/cubit/init_router/init_router_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
@@ -21,31 +20,22 @@ class InitRouterPage extends StatelessWidget {
         MainStateInitial() => const SillyCircularProgressIndicator(),
         MainStateLoading() => const SillyCircularProgressIndicator(),
         MainStateError(:final message) => Center(child: Text(message)),
-        MainStateLightInitialized(
-          :final prefs,
-          :final logger,
-          :final locationService
-        ) =>
-          _buildInitRouterPage(context, prefs, logger, locationService),
-        MainStateHeavyInitialized(
-          :final prefs,
-          :final logger,
-          :final locationService
-        ) =>
-          _buildInitRouterPage(context, prefs, logger, locationService),
+        MainStateLightInitialized(:final prefs, :final locationService) =>
+          _buildInitRouterPage(context, prefs, locationService),
+        MainStateHeavyInitialized(:final prefs, :final locationService) =>
+          _buildInitRouterPage(context, prefs, locationService),
       };
     });
   }
 
   Widget _buildInitRouterPage(BuildContext context, SharedPreferences prefs,
-      Logger logger, LocationService locationService) {
+      LocationService locationService) {
     return BlocProvider(
       create: (context) => InitRouterCubit(prefs: prefs)..checkPreferences(),
       child: BlocListener<InitRouterCubit, InitRouterState>(
         listener: (context, state) {
           if (state is InitRouterSuccess) {
-            _navigateBasedOnRoute(
-                context, state.route, prefs, logger, locationService);
+            _navigateBasedOnRoute(context, state.route, prefs, locationService);
           }
         },
         child: SillyCircularProgressIndicator(),
@@ -54,16 +44,14 @@ class InitRouterPage extends StatelessWidget {
   }
 
   void _navigateBasedOnRoute(BuildContext context, RouteType route,
-      SharedPreferences prefs, Logger logger, LocationService locationService) {
+      SharedPreferences prefs, LocationService locationService) {
     final page = route == RouteType.home
         ? HomePage(
             prefs: prefs,
-            logger: logger,
             locationService: locationService,
           )
         : CreateProfilePage(
             prefs: prefs,
-            logger: logger,
             locationService: locationService,
           );
 
