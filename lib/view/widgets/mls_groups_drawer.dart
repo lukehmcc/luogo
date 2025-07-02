@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/groups_drawer/groups_drawer_cubit.dart';
 import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
+import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupsDrawer extends StatelessWidget {
@@ -40,7 +41,7 @@ class GroupsDrawer extends StatelessWidget {
                   // if a group is selected, make sure to set the homestate
                   if (state.group != null) {
                     final homeCubit = BlocProvider.of<HomeCubit>(context);
-                    homeCubit.groupSelected(state.group);
+                    homeCubit.groupSelected(state.group!);
                   }
                   return GroupListView(
                     groups: state.groups,
@@ -58,7 +59,7 @@ class GroupsDrawer extends StatelessWidget {
 }
 
 class GroupListView extends StatelessWidget {
-  final List<dynamic> groups;
+  final GroupInfoList groups;
   final S5Messenger s5messenger;
 
   const GroupListView(
@@ -72,7 +73,7 @@ class GroupListView extends StatelessWidget {
         final group = groups[index];
         return ListTile(
           onTap: () {
-            context.read<GroupsDrawerCubit>().selectGroup(group['id']);
+            context.read<GroupsDrawerCubit>().selectGroup(group.id);
             Navigator.pop(context); // Close drawer
           },
           onLongPress: () async {
@@ -85,12 +86,12 @@ class GroupListView extends StatelessWidget {
             if (res != null && res.isNotEmpty && context.mounted) {
               context
                   .read<GroupsDrawerCubit>()
-                  .renameGroup(group['id'], res.first);
+                  .renameGroup(group.id, res.first);
             }
           },
-          title: Text(group['name']),
-          subtitle: Text(group['id']),
-          selected: s5messenger.messengerState.groupId == group['id'],
+          title: Text(group.name),
+          subtitle: Text(group.id),
+          selected: s5messenger.messengerState.groupId == group.id,
           selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
         );
       },

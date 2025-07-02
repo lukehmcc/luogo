@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 /// Provides the MapOverlay that users can interact with once a group is selected
 class MapOverlay extends StatelessWidget {
-  final dynamic group;
+  final GroupInfo group;
   final S5Messenger s5messenger;
   const MapOverlay({super.key, required this.group, required this.s5messenger});
 
@@ -18,7 +19,7 @@ class MapOverlay extends StatelessWidget {
             child: Card(
               child: Padding(
                 padding: EdgeInsetsGeometry.all(8),
-                child: Text(group ?? 'Group Name'),
+                child: Text(group.name),
               ),
             ),
           ),

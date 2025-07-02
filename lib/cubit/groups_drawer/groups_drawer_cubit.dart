@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
+import 'package:luogo/main.dart';
+import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
@@ -17,10 +19,13 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     if (s5messenger == null) return;
     emit(GroupsDrawerLoading());
     try {
-      final groups = s5messenger!.groupsBox.values.toList();
-      final currentGroupId = s5messenger!.messengerState.groupId;
-      emit(GroupsDrawerLoaded(groups, currentGroupId));
+      final GroupInfoList groups =
+          GroupInfo.fromJsonList(s5messenger!.groupsBox.values.toList());
+      final GroupInfo? currentGroup =
+          groups.findByID(s5messenger!.messengerState.groupId ?? "");
+      emit(GroupsDrawerLoaded(groups, currentGroup));
     } catch (e) {
+      logger.e(e);
       emit(GroupsDrawerError(e.toString()));
     }
   }
@@ -40,8 +45,10 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     try {
       s5messenger!.messengerState.groupId = groupId;
       s5messenger!.messengerState.update();
-      final groups = s5messenger!.groupsBox.values.toList();
-      emit(GroupsDrawerLoaded(groups, groupId)); // Use same state
+      final GroupInfoList groups =
+          GroupInfo.fromJsonList(s5messenger!.groupsBox.values.toList());
+      final GroupInfo? group = groups.findByID(groupId);
+      emit(GroupsDrawerLoaded(groups, group)); // Use same state
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
     }

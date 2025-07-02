@@ -1,12 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/model/group_info.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  dynamic group;
+  GroupInfo? group;
   HomeCubit() : super(HomeInitial());
 
-  void groupSelected(dynamic groupSelected) {
+  void groupSelected(GroupInfo groupSelected) {
     group = groupSelected;
     logger.d("New Group: $group");
     emit(HomeGroupSelected(group));

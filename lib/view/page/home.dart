@@ -50,7 +50,7 @@ class HomePage extends StatelessWidget {
                   final mainCubit = context.read<MainCubit>();
                   if (homeCubit.group != null) {
                     return MapOverlay(
-                      group: homeCubit.group,
+                      group: homeCubit.group!,
                       s5messenger: mainCubit.s5messenger,
                     );
                   }
