@@ -6,7 +6,8 @@ class GroupsDrawerLoading extends GroupsDrawerState {}
 
 class GroupsDrawerLoaded extends GroupsDrawerState {
   final List<dynamic> groups;
-  GroupsDrawerLoaded(this.groups);
+  final dynamic group;
+  GroupsDrawerLoaded(this.groups, [this.group]);
 }
 
 class GroupsDrawerError extends GroupsDrawerState {

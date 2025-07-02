@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/groups_drawer/groups_drawer_cubit.dart';
 import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
-import 'package:luogo/main.dart';
+import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupsDrawer extends StatelessWidget {
@@ -37,6 +37,11 @@ class GroupsDrawer extends StatelessWidget {
                   return Center(child: Text(state.message));
                 }
                 if (state is GroupsDrawerLoaded) {
+                  // if a group is selected, make sure to set the homestate
+                  if (state.group != null) {
+                    final homeCubit = BlocProvider.of<HomeCubit>(context);
+                    homeCubit.groupSelected(state.group);
+                  }
                   return GroupListView(
                     groups: state.groups,
                     s5messenger: s5messenger,
