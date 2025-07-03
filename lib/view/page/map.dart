@@ -19,8 +19,8 @@ class MapView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use BlocProvider to handle cubit state
-    return BlocProvider(
-        create: (context) =>
+    return BlocProvider<MapCubit>(
+        create: (BuildContext context) =>
             MapCubit(locationService: locationService, prefs: prefs),
         child: Scaffold(
           floatingActionButtonLocation:
@@ -28,11 +28,11 @@ class MapView extends StatelessWidget {
 
           // This section reacts to state to draw modals and such
           body: BlocListener<MapCubit, MapState>(
-            listener: (context, state) {
+            listener: (BuildContext context, MapState state) {
               if (state is MapSymbolClicked) {
-                showModalBottomSheet(
+                showModalBottomSheet<dynamic>(
                   context: context,
-                  builder: (context) => SizedBox(
+                  builder: (BuildContext context) => SizedBox(
                     height: 200,
                     child: Center(
                       child: Text(state.symbolID),

@@ -45,7 +45,7 @@ Future<Uint8List> addColoredCircleAndLetterToImage(
   final scaledLetter = img.copyResize(letterImage, width: 200, height: 200);
 
 // Paste onto your main image
-  img.compositeImage(image, scaledLetter, dstX: 68, dstY: 52);
+  img.compositeImage(image, scaledLetter, dstX: 75, dstY: 52);
   // 3. Encode back to PNG (or JPEG/WebP)
   return img.encodePng(image);
 }

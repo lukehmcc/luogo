@@ -5,6 +5,7 @@ import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
+import 'package:luogo/cubit/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
 import 'package:luogo/view/page/silly_progress_indicator.dart';
@@ -32,8 +33,6 @@ class HomePage extends StatelessWidget {
           )
         ],
         child: Scaffold(
-          appBar: AppBar(backgroundColor: Colors.transparent),
-          extendBodyBehindAppBar: true,
           body: Stack(
             children: [
               // Map loads immediately in background
@@ -41,6 +40,8 @@ class HomePage extends StatelessWidget {
                 locationService: locationService,
                 prefs: prefs,
               ),
+              ScaffoldDrawerButton(),
+
               // Only show the overlay if the group doesn't exist
               BlocBuilder<HomeCubit, HomeState>(
                 builder: (context, homeState) {
@@ -49,10 +50,14 @@ class HomePage extends StatelessWidget {
                   // s5messenger should always be populated
                   final mainCubit = context.read<MainCubit>();
                   if (homeCubit.group != null) {
-                    return MapOverlay(
-                      group: homeCubit.group!,
-                      s5messenger: mainCubit.s5messenger,
-                    );
+                    return BlocProvider<MapOverlayCubit>(
+                        create: (BuildContext context) => MapOverlayCubit(
+                            selectedGroup: homeCubit.group!,
+                            s5messenger: mainCubit.s5messenger),
+                        child: MapOverlay(
+                          group: homeCubit.group!,
+                          s5messenger: mainCubit.s5messenger,
+                        ));
                   }
                   return Container();
                 },
@@ -80,5 +85,22 @@ class HomePage extends StatelessWidget {
             },
           ),
         ));
+  }
+}
+
+class ScaffoldDrawerButton extends StatelessWidget {
+  const ScaffoldDrawerButton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: IconButton(
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+            icon: Icon(Icons.menu)),
+      ),
+    );
   }
 }

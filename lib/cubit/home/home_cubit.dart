@@ -10,7 +10,11 @@ class HomeCubit extends Cubit<HomeState> {
   void groupSelected(GroupInfo groupSelected) {
     group = groupSelected;
     logger.d("New Group: $group");
-    emit(HomeGroupSelected(group));
+    if (group != null) {
+      emit(HomeGroupSelected(group!));
+    } else {
+      logger.e("Group doesn't exist");
+    }
   }
 
   void clearSelection() {

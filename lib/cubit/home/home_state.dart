@@ -1,8 +1,10 @@
+import 'package:luogo/model/group_info.dart';
+
 abstract class HomeState {}
 
 class HomeInitial extends HomeState {}
 
 class HomeGroupSelected extends HomeState {
-  final dynamic group;
+  final GroupInfo group;
   HomeGroupSelected(this.group);
 }

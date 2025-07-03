@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:lib5/util.dart';
 
 // Quick change of: https://github.com/s5-dev/lib5/blob/main/lib/src/node/logger/simple.dart
@@ -15,18 +17,18 @@ class SilentLogger extends Logger {
 
   @override
   void info(String s) {
-    print(prefix + s.replaceAll(RegExp('\u001b\\[\\d+m'), ''));
+    log(prefix + s.replaceAll(RegExp('\u001b\\[\\d+m'), ''));
   }
 
   @override
   void error(String s) {
-    print('$prefix[ERROR] $s');
+    log('$prefix[ERROR] $s');
   }
 
   @override
   void verbose(String s) {
     if (!showVerbose) return;
-    print(prefix + s);
+    log(prefix + s);
   }
 
   @override
