@@ -55,7 +55,7 @@ class HomePage extends StatelessWidget {
                             selectedGroup: homeCubit.group!,
                             s5messenger: mainCubit.s5messenger),
                         child: MapOverlay(
-                          group: homeCubit.group!,
+                          groupInfo: homeCubit.group!,
                           s5messenger: mainCubit.s5messenger,
                         ));
                   }

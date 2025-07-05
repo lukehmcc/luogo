@@ -67,34 +67,40 @@ class GroupListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final group = groups[index];
-        return ListTile(
-          onTap: () {
-            context.read<GroupsDrawerCubit>().selectGroup(group.id);
-            Navigator.pop(context); // Close drawer
-          },
-          onLongPress: () async {
-            final res = await showTextInputDialog(
-              context: context,
-              textFields: [
-                DialogTextField(hintText: 'Edit Group Name (local)'),
-              ],
-            );
-            if (res != null && res.isNotEmpty && context.mounted) {
-              context
-                  .read<GroupsDrawerCubit>()
-                  .renameGroup(group.id, res.first);
-            }
-          },
-          title: Text(group.name),
-          subtitle: Text(group.id),
-          selected: s5messenger.messengerState.groupId == group.id,
-          selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-        );
-      },
-    );
+    // Put streambuilder here so each time the chat state updates it can update it
+    return StreamBuilder<void>(
+        stream: s5messenger.messengerState.stream,
+        builder: (context, snapshot) {
+          return ListView.builder(
+            itemCount: groups.length,
+            itemBuilder: (context, index) {
+              final group = groups[index];
+              return ListTile(
+                onTap: () {
+                  context.read<GroupsDrawerCubit>().selectGroup(group.id);
+                  Navigator.pop(context); // Close drawer
+                },
+                onLongPress: () async {
+                  final res = await showTextInputDialog(
+                    context: context,
+                    textFields: [
+                      DialogTextField(hintText: 'Edit Group Name (local)'),
+                    ],
+                  );
+                  if (res != null && res.isNotEmpty && context.mounted) {
+                    context
+                        .read<GroupsDrawerCubit>()
+                        .renameGroup(group.id, res.first);
+                  }
+                },
+                title: Text(group.name),
+                subtitle: Text(group.id),
+                selected: s5messenger.messengerState.groupId == group.id,
+                selectedTileColor:
+                    Theme.of(context).colorScheme.primaryContainer,
+              );
+            },
+          );
+        });
   }
 }

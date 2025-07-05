@@ -8,3 +8,5 @@ class MapOverlayQRPopupPressed extends MapOverlayState {
   String keypair;
   MapOverlayQRPopupPressed({required this.keypair});
 }
+
+class MapOVerlayGroupPopupPressed extends MapOverlayState {}

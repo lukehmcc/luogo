@@ -18,4 +18,8 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
         "luogo-temporary-user-identity:${base64UrlNoPaddingEncode(keypackage)}";
     emit(MapOverlayQRPopupPressed(keypair: message));
   }
+
+  groupButtonPressed() {
+    emit(MapOVerlayGroupPopupPressed());
+  }
 }
