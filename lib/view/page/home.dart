@@ -49,17 +49,25 @@ class HomePage extends StatelessWidget {
                   // since you can only see this if a group is selected,
                   // s5messenger should always be populated
                   final mainCubit = context.read<MainCubit>();
-                  if (homeCubit.group != null) {
-                    return BlocProvider<MapOverlayCubit>(
-                        create: (BuildContext context) => MapOverlayCubit(
-                            selectedGroup: homeCubit.group!,
-                            s5messenger: mainCubit.s5messenger),
-                        child: MapOverlay(
-                          groupInfo: homeCubit.group!,
-                          s5messenger: mainCubit.s5messenger,
-                        ));
-                  }
-                  return Container();
+                  // Now read to check if heavy heavy init
+                  return BlocSelector<MainCubit, MainState, bool>(
+                    selector: (MainState state) =>
+                        state is MainStateHeavyInitialized,
+                    builder: (context, isInitialized) {
+                      if (isInitialized) {
+                        return BlocProvider<MapOverlayCubit>(
+                            create: (BuildContext context) => MapOverlayCubit(
+                                selectedGroup: homeCubit.group,
+                                s5messenger: mainCubit.s5messenger),
+                            child: MapOverlay(
+                              groupInfo: homeCubit.group,
+                              s5messenger: mainCubit.s5messenger,
+                            ));
+                      } else {
+                        return Container();
+                      }
+                    },
+                  );
                 },
               ),
             ],

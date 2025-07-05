@@ -6,7 +6,7 @@ import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class MapOverlayCubit extends Cubit<MapOverlayState> {
-  GroupInfo selectedGroup;
+  GroupInfo? selectedGroup;
   S5Messenger s5messenger;
   MapOverlayCubit({required this.selectedGroup, required this.s5messenger})
       : super(MapOverlayInitial());
