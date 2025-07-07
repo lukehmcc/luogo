@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
+import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
-import 'package:luogo/cubit/map_overlay/map_overlay_state.dart';
+import 'package:luogo/cubit/map/map_overlay/map_overlay_state.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 

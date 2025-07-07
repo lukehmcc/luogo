@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/key_pair_qr/keypair_qr_cubit.dart';
-import 'package:luogo/cubit/map_overlay/map_overlay_cubit.dart';
-import 'package:luogo/cubit/map_overlay/map_overlay_state.dart';
+import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
+import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
+import 'package:luogo/cubit/map/map_overlay/map_overlay_state.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/view/page/map/keypair_qr_read_write_dialog.dart';
 import 'package:s5_messenger/s5_messenger.dart';

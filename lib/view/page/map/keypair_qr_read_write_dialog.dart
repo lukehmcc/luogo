@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/key_pair_qr/keypair_qr_cubit.dart';
-import 'package:luogo/cubit/key_pair_qr/keypair_qr_state.dart';
+import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
+import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
 import 'package:luogo/main.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';

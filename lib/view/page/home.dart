@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/groups_drawer/groups_drawer_cubit.dart';
+import 'package:luogo/cubit/home/groups_drawer/groups_drawer_cubit.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
-import 'package:luogo/cubit/map_overlay/map_overlay_cubit.dart';
+import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
 import 'package:luogo/view/page/map/map_overlay.dart';

@@ -1,8 +1,8 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:luogo/cubit/groups_drawer/groups_drawer_cubit.dart';
-import 'package:luogo/cubit/groups_drawer/groups_drawer_state.dart';
+import 'package:luogo/cubit/home/groups_drawer/groups_drawer_cubit.dart';
+import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
