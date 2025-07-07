@@ -5,9 +5,9 @@ import 'package:image/image.dart' as img;
 /// Adds an asset image to the currently displayed style
 Future<void> addImageFromAsset(MapLibreMapController controller, String name,
     String assetName, Color color, String letter) async {
-  final bytes =
+  final Uint8List bytes =
       await addColoredCircleAndLetterToImage(assetName, color, letter);
-  final list = bytes.buffer.asUint8List();
+  final Uint8List list = bytes.buffer.asUint8List();
   return controller.addImage(name, list);
 }
 
@@ -32,20 +32,20 @@ Future<Uint8List> addColoredCircleAndLetterToImage(
   final letterImage = img.Image(width: 100, height: 100, numChannels: 4);
   img.fill(letterImage, color: img.ColorRgba8(0, 0, 0, 0));
 
-  img.drawChar(
+  img.drawString(
     letterImage,
     letter[0].toUpperCase(),
     font: img.arial48,
-    x: 0,
-    y: 0,
+    y: 22,
     color: img.ColorRgb8(0, 0, 0),
   );
 
 // Now scale it up
-  final scaledLetter = img.copyResize(letterImage, width: 200, height: 200);
+  final img.Image scaledLetter =
+      img.copyResize(letterImage, width: 200, height: 200);
 
 // Paste onto your main image
-  img.compositeImage(image, scaledLetter, dstX: 75, dstY: 52);
+  img.compositeImage(image, scaledLetter);
   // 3. Encode back to PNG (or JPEG/WebP)
   return img.encodePng(image);
 }
