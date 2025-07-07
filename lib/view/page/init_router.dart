@@ -7,7 +7,7 @@ import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/create_profile.dart';
 import 'package:luogo/view/page/home.dart';
-import 'package:luogo/view/page/silly_progress_indicator.dart';
+import 'package:luogo/view/widgets/silly_progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class InitRouterPage extends StatelessWidget {

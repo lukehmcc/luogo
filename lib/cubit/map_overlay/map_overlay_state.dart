@@ -9,4 +9,4 @@ class MapOverlayQRPopupPressed extends MapOverlayState {
   MapOverlayQRPopupPressed({required this.keypair});
 }
 
-class MapOVerlayGroupPopupPressed extends MapOverlayState {}
+class MapOverlayGroupPopupPressed extends MapOverlayState {}

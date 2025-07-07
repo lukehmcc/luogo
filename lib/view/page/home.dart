@@ -8,9 +8,9 @@ import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/cubit/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
-import 'package:luogo/view/page/silly_progress_indicator.dart';
-import 'package:luogo/view/widgets/map_overlay.dart';
-import 'package:luogo/view/widgets/mls_groups_drawer.dart';
+import 'package:luogo/view/page/map/map_overlay.dart';
+import 'package:luogo/view/page/home/mls_groups_drawer.dart';
+import 'package:luogo/view/widgets/silly_progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {

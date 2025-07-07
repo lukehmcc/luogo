@@ -6,7 +6,7 @@ import 'package:luogo/cubit/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/cubit/map_overlay/map_overlay_state.dart';
 import 'package:luogo/model/group_info.dart';
-import 'package:luogo/view/widgets/keypair_qr_read_write_dialog.dart';
+import 'package:luogo/view/page/map/keypair_qr_read_write_dialog.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 /// Provides the MapOverlay that users can interact with once a group is selected
@@ -34,7 +34,7 @@ class MapOverlay extends StatelessWidget {
                     );
                   });
             }
-            if (mapOverlayState is MapOVerlayGroupPopupPressed) {
+            if (mapOverlayState is MapOverlayGroupPopupPressed) {
               // Shows dialog for group so user can see group info
               showModalBottomSheet<dynamic>(
                 context: context,

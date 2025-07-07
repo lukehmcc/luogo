@@ -20,6 +20,6 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   }
 
   groupButtonPressed() {
-    emit(MapOVerlayGroupPopupPressed());
+    emit(MapOverlayGroupPopupPressed());
   }
 }

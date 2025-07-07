@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
