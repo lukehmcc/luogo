@@ -46,99 +46,98 @@ class CreateProfilePage extends StatelessWidget {
             appBar: AppBar(title: const Text('Create Profile')),
             body: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
+              child:
                   BlocBuilder<CreateProfilePageCubit, CreateProfilePageState>(
-                    builder: (context, state) {
-                      final cubit = context.read<CreateProfilePageCubit>();
-                      return Column(
-                        children: [
-                          Stack(
-                            children: [
-                              Container(
-                                width: 200, // Diameter of the circle
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  color: cubit.selectedColor,
-                                  shape: BoxShape.circle,
-                                ),
+                builder: (context, state) {
+                  final cubit = context.read<CreateProfilePageCubit>();
+                  return Center(
+                      child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              width: 200, // Diameter of the circle
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: cubit.selectedColor,
+                                shape: BoxShape.circle,
                               ),
-                              if (cubit.nameController.text.isNotEmpty)
-                                Positioned.fill(
-                                  child: Center(
-                                    child: Text(
-                                      cubit.nameController.text[0]
-                                          .toUpperCase(),
-                                      style: TextStyle(
-                                        // Optional: Adjust font size/weight for visibility
-                                        fontSize: 100,
-                                      ),
+                            ),
+                            if (cubit.nameController.text.isNotEmpty)
+                              Positioned.fill(
+                                child: Center(
+                                  child: Text(
+                                    cubit.nameController.text[0].toUpperCase(),
+                                    style: TextStyle(
+                                      // Optional: Adjust font size/weight for visibility
+                                      fontSize: 100,
                                     ),
                                   ),
                                 ),
+                              ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 20,
+                        ),
+                        Column(
+                          children: [
+                            if (cubit.nameController.text.isNotEmpty) ...[
+                              Text(
+                                cubit.nameController.text,
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(height: 20),
                             ],
-                          ),
-                          SizedBox(
-                            height: 20,
-                          ),
-                          Column(
-                            children: [
-                              if (cubit.nameController.text.isNotEmpty) ...[
-                                Text(
-                                  cubit.nameController.text,
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                                const SizedBox(height: 20),
-                              ],
-                              // Other widgets...
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: cubit.nameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Enter your name',
-                                    border: OutlineInputBorder(),
-                                  ),
+                            // Other widgets...
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: cubit.nameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Enter your name',
+                                  border: OutlineInputBorder(),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(
-                                    Icons.colorize), // Eye dropper style icon
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: const Text(
-                                            "Pick your profile color!"),
-                                        content: SingleChildScrollView(
-                                          child: BlockPicker(
-                                            pickerColor: cubit.pickerColor,
-                                            onColorChanged: cubit.onColorPicked,
-                                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(
+                                  Icons.colorize), // Eye dropper style icon
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text(
+                                          "Pick your profile color!"),
+                                      content: SingleChildScrollView(
+                                        child: BlockPicker(
+                                          pickerColor: cubit.pickerColor,
+                                          onColorChanged: cubit.onColorPicked,
                                         ),
-                                      );
-                                    },
-                                  );
-                                },
-                                tooltip: 'Pick a color',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton(
-                              onPressed: cubit.savePreferences,
-                              child: Text("Let's go!")),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              tooltip: 'Pick a color',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton(
+                            onPressed: cubit.savePreferences,
+                            child: Text("Let's go!")),
+                      ],
+                    ),
+                  ));
+                },
               ),
             ),
           ),

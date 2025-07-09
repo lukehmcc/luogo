@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
 import 'package:luogo/main.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:pretty_qr_code/pretty_qr_code.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class KeypairQrReadWriteDialog extends StatelessWidget {
   final String keypair;
@@ -12,81 +13,145 @@ class KeypairQrReadWriteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Your ID Zone"),
-            Tooltip(
-              message:
-                  "Another user can scan this QR code to create an invite link/QR code. Then you can scan their generated QR code to join.",
-              child: IconButton(
-                icon: Icon(Icons.help_outline),
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
-      ),
-      // TODO put a user's logo and color inside the QR code
-      content: BlocBuilder<KeypairQRCubit, KeypairQRState>(
-        builder: (BuildContext context, KeypairQRState keypairQRState) {
-          final KeypairQRCubit kpCubit =
-              BlocProvider.of<KeypairQRCubit>(context);
-          return Column(
-            mainAxisSize: MainAxisSize.min,
+    return BlocListener<KeypairQRCubit, KeypairQRState>(
+      // Us a listener here so widget state isn't handled form bloc thread
+      listener: (BuildContext context, KeypairQRState keypairQRState) {
+        // Pop once a gorup has been joined
+        if (keypairQRState is KeypairQRScannedWelcomeMessage) {
+          Navigator.pop(context);
+        }
+      },
+      child: AlertDialog(
+        title: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Center(
-                  child: ToggleButtons(
-                isSelected: [kpCubit.isQRSelected, !kpCubit.isQRSelected],
-                onPressed: (int index) => kpCubit.setQRSelected(index == 0),
-                borderRadius: BorderRadius.circular(8),
+              const Text("Your ID Zone"),
+              Tooltip(
+                message:
+                    "Another user can scan this QR code to create an invite link/QR code. Then you can scan their generated QR code to join.",
+                child: IconButton(
+                  icon: Icon(Icons.help_outline),
+                  onPressed: () {},
+                ),
+              ),
+            ],
+          ),
+        ),
+        // TODO put a user's logo and color inside the QR code
+        content: BlocBuilder<KeypairQRCubit, KeypairQRState>(
+          builder: (BuildContext context, KeypairQRState keypairQRState) {
+            final KeypairQRCubit kpCubit =
+                BlocProvider.of<KeypairQRCubit>(context);
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: 100,
-                    child: Center(
-                      child: Text('QR'),
+                  Center(
+                    child: ToggleButtons(
+                      isSelected: [kpCubit.isQRSelected, !kpCubit.isQRSelected],
+                      onPressed: (int index) =>
+                          kpCubit.setQRSelected(index == 0),
+                      borderRadius: BorderRadius.circular(8),
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          child: Center(
+                            child: Text('QR'),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 100,
+                          child: Center(child: Text('Scanner')),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(
-                    width: 100,
-                    child: Center(child: Text('Scanner')),
-                  ),
+                  const SizedBox(height: 10),
+                  if (kpCubit.isQRSelected)
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * .7,
+                          height: MediaQuery.of(context).size.width * .7,
+                          child: QrImageView(data: keypair),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Clipboard.setData(
+                            ClipboardData(text: keypair),
+                          ),
+                          child: const Text("Copy Key"),
+                        ),
+                      ],
+                    ),
+                  if (!kpCubit.isQRSelected)
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * .7,
+                          height: MediaQuery.of(context).size.width * .7,
+                          child: MobileScanner(
+                            onDetect: (result) {
+                              if (result.barcodes.first.rawValue != null) {
+                                try {
+                                  BlocProvider.of<KeypairQRCubit>(context)
+                                      .handleQRWelcomeMessage(
+                                          result.barcodes.first.rawValue!);
+                                } catch (e) {
+                                  logger.e(e);
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Or enter key manually',
+                                  ),
+                                  controller: kpCubit.textController,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (kpCubit.textController.text.isNotEmpty) {
+                                    try {
+                                      BlocProvider.of<KeypairQRCubit>(context)
+                                          .handleQRWelcomeMessage(
+                                              kpCubit.textController.text);
+                                    } catch (e) {
+                                      logger.e(e);
+                                    }
+                                  }
+                                },
+                                child: const Text('Submit'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
-              )),
-              SizedBox(
-                height: 10,
               ),
-              if (kpCubit.isQRSelected)
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * .7,
-                  height: MediaQuery.of(context).size.width * .7,
-                  child: PrettyQrView.data(data: keypair),
-                ),
-              // TODO make the scanner pipe to somewhere
-              if (!kpCubit.isQRSelected)
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * .7,
-                  height: MediaQuery.of(context).size.width * .7,
-                  child: MobileScanner(
-                    onDetect: (result) {
-                      logger.d(result.barcodes.first.rawValue ?? "No QR code");
-                    },
-                  ),
-                ),
-            ],
-          );
-        },
+            );
+          },
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Close"),
+            ),
+          )
+        ],
       ),
-      actions: [
-        Center(
-          child: TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Close"),
-          ),
-        )
-      ],
     );
   }
 }

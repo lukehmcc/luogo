@@ -120,6 +120,7 @@ class MapCubit extends Cubit<MapState> {
   }
 
   Future<void> moveToUser() async {
+    logger.d("User location $_userPosition");
     final controller = await mapController.future;
     await controller.animateCamera(
       CameraUpdate.newCameraPosition(

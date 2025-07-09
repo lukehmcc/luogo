@@ -6,3 +6,5 @@ class KeypairQSelection extends KeypairQRState {
   final bool isQRSelected;
   KeypairQSelection({required this.isQRSelected});
 }
+
+class KeypairQRScannedWelcomeMessage extends KeypairQRState {}

@@ -1,11 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:luogo/cubit/map/group_sheet/group_sheet_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_state.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/view/page/map/group_sheet.dart';
 import 'package:luogo/view/page/map/keypair_qr_read_write_dialog.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
@@ -24,11 +24,12 @@ class MapOverlay extends StatelessWidget {
           listener: (BuildContext context, MapOverlayState mapOverlayState) {
             if (mapOverlayState is MapOverlayQRPopupPressed) {
               // Shows dialog for the QR button so user can scan
-              showDialog(
+              showDialog<dynamic>(
                   context: context,
                   builder: (BuildContext context) {
                     return BlocProvider<KeypairQRCubit>(
-                      create: (BuildContext context) => KeypairQRCubit(),
+                      create: (BuildContext context) =>
+                          KeypairQRCubit(s5messenger: s5messenger),
                       child: KeypairQrReadWriteDialog(
                           keypair: mapOverlayState.keypair),
                     );
@@ -38,31 +39,16 @@ class MapOverlay extends StatelessWidget {
               // Shows dialog for group so user can see group info
               showModalBottomSheet<dynamic>(
                 context: context,
-                builder: (BuildContext context) => Column(
-                  children: [
-                    Text(groupInfo!.name,
-                        style: TextStyle(
-                            fontSize: 30, fontWeight: FontWeight.w700)),
-                    Text("Members:"),
-                    StreamBuilder<void>(
-                      stream: s5messenger
-                          .group(groupInfo!.id)
-                          .membersStateNotifier
-                          .stream,
-                      builder: (context, snapshot) {
-                        return ListView(
-                          children: [
-                            for (final member
-                                in s5messenger.group(groupInfo!.id).members)
-                              ListTile(
-                                title: Text(utf8.decode(member.identity)),
-                              )
-                          ],
-                        );
-                      },
+                builder: (BuildContext context) {
+                  return BlocProvider<GroupSheetCubit>(
+                    create: (BuildContext context) => GroupSheetCubit(
+                        s5messenger: s5messenger, groupInfo: groupInfo!),
+                    child: GroupSheet(
+                      groupInfo: groupInfo!,
+                      s5messenger: s5messenger,
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             }
           },
@@ -118,7 +104,8 @@ class MapOverlay extends StatelessWidget {
                 context: context,
                 builder: (BuildContext context) {
                   return BlocProvider<KeypairQRCubit>(
-                    create: (BuildContext context) => KeypairQRCubit(),
+                    create: (BuildContext context) =>
+                        KeypairQRCubit(s5messenger: s5messenger),
                     child: KeypairQrReadWriteDialog(
                         keypair: mapOverlayState.keypair),
                   );
