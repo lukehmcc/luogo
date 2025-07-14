@@ -8,13 +8,18 @@ import 'package:luogo/model/group_info.dart';
 import 'package:luogo/view/page/map/group_sheet.dart';
 import 'package:luogo/view/page/map/keypair_qr_read_write_dialog.dart';
 import 'package:s5_messenger/s5_messenger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provides the MapOverlay that users can interact with once a group is selected
 class MapOverlay extends StatelessWidget {
   final GroupInfo? groupInfo;
   final S5Messenger s5messenger;
+  final SharedPreferences prefs;
   const MapOverlay(
-      {super.key, required this.groupInfo, required this.s5messenger});
+      {super.key,
+      required this.groupInfo,
+      required this.s5messenger,
+      required this.prefs});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +47,9 @@ class MapOverlay extends StatelessWidget {
                 builder: (BuildContext context) {
                   return BlocProvider<GroupSheetCubit>(
                     create: (BuildContext context) => GroupSheetCubit(
-                        s5messenger: s5messenger, groupInfo: groupInfo!),
+                        s5messenger: s5messenger,
+                        groupInfo: groupInfo!,
+                        prefs: prefs),
                     child: GroupSheet(
                       groupInfo: groupInfo!,
                       s5messenger: s5messenger,

@@ -32,30 +32,51 @@ class GroupSheet extends StatelessWidget {
               });
         }
       },
-      child: Column(
-        children: <Widget>[
-          Text(groupInfo.name,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
-          ElevatedButton(
-              onPressed: () => BlocProvider.of<GroupSheetCubit>(context)
-                  .showInviteUserScreen(context),
-              child: Text("Invite User")),
-          Text("Members:"),
-          Expanded(
-              child: StreamBuilder<void>(
-            stream: s5messenger.group(groupInfo.id).membersStateNotifier.stream,
-            builder: (context, snapshot) {
-              return ListView(
-                children: [
-                  for (final member in s5messenger.group(groupInfo.id).members)
-                    ListTile(
-                      title: Text(utf8.decode(member.identity)),
-                    )
+      child: BlocBuilder<GroupSheetCubit, GroupSheetState>(
+        builder: (BuildContext context, GroupSheetState state) {
+          GroupSheetCubit groupSheetCubit =
+              BlocProvider.of<GroupSheetCubit>(context);
+          return Column(
+            children: <Widget>[
+              Text(groupInfo.name,
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
+              ElevatedButton(
+                  onPressed: () =>
+                      groupSheetCubit.showInviteUserScreen(context),
+                  child: Text("Invite User")),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text("Share Location: "),
+                  SizedBox(
+                    width: 20,
+                  ),
+                  Switch(
+                      value: groupSheetCubit.shareLocation,
+                      onChanged: (bool updatedState) => groupSheetCubit
+                          .clickShareLocationSwitch(updatedState)),
                 ],
-              );
-            },
-          )),
-        ],
+              ),
+              Text("Members:"),
+              Expanded(
+                  child: StreamBuilder<void>(
+                stream:
+                    s5messenger.group(groupInfo.id).membersStateNotifier.stream,
+                builder: (context, snapshot) {
+                  return ListView(
+                    children: [
+                      for (final member
+                          in s5messenger.group(groupInfo.id).members)
+                        ListTile(
+                          title: Text(utf8.decode(member.identity)),
+                        )
+                    ],
+                  );
+                },
+              )),
+            ],
+          );
+        },
       ),
     );
   }

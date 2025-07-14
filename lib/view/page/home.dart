@@ -55,6 +55,8 @@ class HomePage extends StatelessWidget {
                         state is MainStateHeavyInitialized,
                     builder: (context, isInitialized) {
                       if (isInitialized) {
+                        // Gotta feed the messenger to location service so it can update peers
+                        locationService.setS5Messenger(mainCubit.s5messenger);
                         return BlocProvider<MapOverlayCubit>(
                             create: (BuildContext context) => MapOverlayCubit(
                                 selectedGroup: homeCubit.group,
@@ -62,6 +64,7 @@ class HomePage extends StatelessWidget {
                             child: MapOverlay(
                               groupInfo: homeCubit.group,
                               s5messenger: mainCubit.s5messenger,
+                              prefs: prefs,
                             ));
                       } else {
                         return Container();
