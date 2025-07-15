@@ -20,22 +20,34 @@ class InitRouterPage extends StatelessWidget {
         MainStateInitial() => const SillyCircularProgressIndicator(),
         MainStateLoading() => const SillyCircularProgressIndicator(),
         MainStateError(:final message) => Center(child: Text(message)),
-        MainStateLightInitialized(:final prefs, :final locationService) =>
-          _buildInitRouterPage(context, prefs, locationService),
-        MainStateHeavyInitialized(:final prefs, :final locationService) =>
-          _buildInitRouterPage(context, prefs, locationService),
+        MainStateLightInitialized(
+          :final prefs,
+          :final locationService,
+          :final userID
+        ) =>
+          _buildInitRouterPage(context, prefs, locationService, userID),
+        MainStateHeavyInitialized(
+          :final prefs,
+          :final locationService,
+          :final userID
+        ) =>
+          _buildInitRouterPage(context, prefs, locationService, userID),
       };
     });
   }
 
-  Widget _buildInitRouterPage(BuildContext context, SharedPreferences prefs,
-      LocationService locationService) {
+  Widget _buildInitRouterPage(
+      BuildContext context,
+      SharedPreferencesWithCache prefs,
+      LocationService locationService,
+      String userID) {
     return BlocProvider(
       create: (context) => InitRouterCubit(prefs: prefs)..checkPreferences(),
       child: BlocListener<InitRouterCubit, InitRouterState>(
         listener: (context, state) {
           if (state is InitRouterSuccess) {
-            _navigateBasedOnRoute(context, state.route, prefs, locationService);
+            _navigateBasedOnRoute(
+                context, state.route, prefs, locationService, userID);
           }
         },
         child: SillyCircularProgressIndicator(),
@@ -43,16 +55,22 @@ class InitRouterPage extends StatelessWidget {
     );
   }
 
-  void _navigateBasedOnRoute(BuildContext context, RouteType route,
-      SharedPreferences prefs, LocationService locationService) {
+  void _navigateBasedOnRoute(
+      BuildContext context,
+      RouteType route,
+      SharedPreferencesWithCache prefs,
+      LocationService locationService,
+      String userID) {
     final page = route == RouteType.home
         ? HomePage(
             prefs: prefs,
             locationService: locationService,
+            userID: userID,
           )
         : CreateProfilePage(
             prefs: prefs,
             locationService: locationService,
+            userID: userID,
           );
 
     Navigator.pushAndRemoveUntil(context,

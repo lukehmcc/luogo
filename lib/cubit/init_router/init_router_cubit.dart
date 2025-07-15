@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Simple logic that checks if user has been initialized
 class InitRouterCubit extends Cubit<InitRouterState> {
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
 
   InitRouterCubit({required this.prefs}) : super(InitRouterInitial());
 

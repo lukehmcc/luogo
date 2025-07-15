@@ -27,8 +27,8 @@ class GroupSettings {
 
   // read
   // If not set, it defaults to true as this is a location sharing app
-  static GroupSettings load(String groupId, SharedPreferences prefs) {
-    final jsonString = prefs.getString(groupId);
+  static GroupSettings load(String groupId, SharedPreferencesWithCache prefs) {
+    final String? jsonString = prefs.getString(groupId);
     if (jsonString == null) {
       return GroupSettings(
           groupId: groupId, shareLocation: true); // No saved settings
@@ -47,7 +47,7 @@ class GroupSettings {
 
   // write
   static Future<void> save(
-    SharedPreferences prefs,
+    SharedPreferencesWithCache prefs,
     GroupSettings settings,
   ) async {
     await prefs.setString(

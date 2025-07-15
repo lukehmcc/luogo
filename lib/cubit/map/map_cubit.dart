@@ -13,7 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Integrates with MapLibre for map rendering and Hive for location updates.
 class MapCubit extends Cubit<MapState> {
   final LocationService locationService;
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
 
   MapCubit({
     required this.locationService,

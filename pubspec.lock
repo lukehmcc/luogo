@@ -21,10 +21,10 @@ packages:
     dependency: transitive
     description:
       name: analyzer
-      sha256: abf63d42450c7ad6d8188887d16eeba2f1ff92ea8d8dc673213e99fb3c02b194
+      sha256: "754aed101003afceca3e6637fe88150dbe9739068e0135788a62645a131867bb"
       url: "https://pub.dev"
     source: hosted
-    version: "7.5.7"
+    version: "7.5.9"
   animations:
     dependency: transitive
     description:
@@ -991,7 +991,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: e0a9d7bb1d13a8956350c11712f6ece16c0c46e8
+      resolved-ref: "7fef8c65eea542bc54ba9045eb708b00e734135e"
       url: "https://github.com/s5-dev/s5_messenger.git"
     source: git
     version: "0.1.2"
@@ -1265,7 +1265,7 @@ packages:
     source: hosted
     version: "3.1.4"
   uuid:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: uuid
       sha256: a5be9ef6618a7ac1e964353ef476418026db906c4facdedaa299b7a2e71690ff

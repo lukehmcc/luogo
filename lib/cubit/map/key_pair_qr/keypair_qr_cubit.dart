@@ -5,10 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
 import 'package:s5_messenger/s5_messenger.dart';
+import 'package:uuid/uuid.dart';
 
 class KeypairQRCubit extends Cubit<KeypairQRState> {
-  S5Messenger s5messenger;
-  KeypairQRCubit({required this.s5messenger}) : super(KeypairQRInitial());
+  final S5Messenger s5messenger;
+  final String userID;
+  KeypairQRCubit({required this.s5messenger, required this.userID})
+      : super(KeypairQRInitial());
 
   bool isQRSelected = true;
   TextEditingController textController = TextEditingController();
@@ -31,6 +34,8 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
       base64UrlNoPaddingDecode(
         welcomeMessage.substring(25),
       ),
+      userID,
+      Uuid().v4(),
     );
     s5messenger.messengerState.groupId = groupId;
     s5messenger.messengerState.update();

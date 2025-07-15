@@ -11,12 +11,14 @@ class MainStateLoading extends MainState {}
 
 /// The fast to init dependencies can be emitted quickly here
 class MainStateLightInitialized extends MainState {
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
   final LocationService locationService;
+  final String userID;
 
   MainStateLightInitialized({
     required this.prefs,
     required this.locationService,
+    required this.userID,
   });
 }
 
@@ -24,14 +26,16 @@ class MainStateLightInitialized extends MainState {
 class MainStateHeavyInitialized extends MainState {
   final S5 s5;
   final S5Messenger s5messenger;
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
   final LocationService locationService;
+  final String userID;
 
   MainStateHeavyInitialized({
     required this.s5,
     required this.s5messenger,
     required this.prefs,
     required this.locationService,
+    required this.userID,
   });
 }
 

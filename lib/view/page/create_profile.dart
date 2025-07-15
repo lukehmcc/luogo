@@ -8,10 +8,14 @@ import 'package:luogo/view/page/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateProfilePage extends StatelessWidget {
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
   final LocationService locationService;
+  final String userID;
   const CreateProfilePage(
-      {super.key, required this.prefs, required this.locationService});
+      {super.key,
+      required this.prefs,
+      required this.locationService,
+      required this.userID});
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +41,7 @@ class CreateProfilePage extends StatelessWidget {
                       builder: (BuildContext context) => HomePage(
                             prefs: prefs,
                             locationService: locationService,
+                            userID: userID,
                           )),
                   (Route<dynamic> route) => false);
             }

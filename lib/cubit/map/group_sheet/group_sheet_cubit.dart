@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class GroupSheetCubit extends Cubit<GroupSheetState> {
   S5Messenger s5messenger;
   GroupInfo groupInfo;
-  SharedPreferences prefs;
+  SharedPreferencesWithCache prefs;
   late bool shareLocation;
   GroupSheetCubit(
       {required this.s5messenger, required this.groupInfo, required this.prefs})

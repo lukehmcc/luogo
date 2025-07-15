@@ -14,12 +14,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MapOverlay extends StatelessWidget {
   final GroupInfo? groupInfo;
   final S5Messenger s5messenger;
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
+  final String userID;
   const MapOverlay(
       {super.key,
       required this.groupInfo,
       required this.s5messenger,
-      required this.prefs});
+      required this.prefs,
+      required this.userID});
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +35,8 @@ class MapOverlay extends StatelessWidget {
                   context: context,
                   builder: (BuildContext context) {
                     return BlocProvider<KeypairQRCubit>(
-                      create: (BuildContext context) =>
-                          KeypairQRCubit(s5messenger: s5messenger),
+                      create: (BuildContext context) => KeypairQRCubit(
+                          s5messenger: s5messenger, userID: userID),
                       child: KeypairQrReadWriteDialog(
                           keypair: mapOverlayState.keypair),
                     );
@@ -111,8 +113,8 @@ class MapOverlay extends StatelessWidget {
                 context: context,
                 builder: (BuildContext context) {
                   return BlocProvider<KeypairQRCubit>(
-                    create: (BuildContext context) =>
-                        KeypairQRCubit(s5messenger: s5messenger),
+                    create: (BuildContext context) => KeypairQRCubit(
+                        s5messenger: s5messenger, userID: userID),
                     child: KeypairQrReadWriteDialog(
                         keypair: mapOverlayState.keypair),
                   );

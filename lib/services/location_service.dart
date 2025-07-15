@@ -9,6 +9,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:msgpack_dart/msgpack_dart.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 /// A service for periodically fetching and storing the device's current location.
 ///
@@ -24,12 +25,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// // Remember to call dispose() when done
 /// ```
 class LocationService {
+  // Passed in vars
+  final SharedPreferencesWithCache prefs;
+  final String userID;
+
+  LocationService({required this.prefs, required this.userID});
+
+  // Later initialized vars
   Timer? _timer;
   late Box<HiveLatLng> locationBox;
-  final SharedPreferences prefs;
   S5Messenger? s5messenger;
-
-  LocationService({required this.prefs});
+  Set<StreamSubscription> _chatListeners = <StreamSubscription<dynamic>>{};
+  Uuid _uuid = Uuid();
 
   /// Call this to start periodic location updates.
   /// Currently using live updates, not the intervals
@@ -42,11 +49,19 @@ class LocationService {
     // Fetch immediately
     _fetchLocation();
 
+    // To not flood the channel with messages, just ping every minuet
+    LatLng? lastSentPosition;
+    _timer = Timer.periodic(Duration(minutes: 1), (timer) async {
+      if (lastSentPosition != null) {
+        // await _updatePeers(lastSentPosition!);
+      }
+    });
+
     // Watch for continuing location updates
     Geolocator.getPositionStream().listen((Position position) async {
       final LatLng latLng = LatLng(position.latitude, position.longitude);
+      lastSentPosition = latLng;
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
-      await _updatePeers(latLng);
     });
   }
 
@@ -91,22 +106,54 @@ class LocationService {
         permission == LocationPermission.always;
   }
 
+  // TODO delete this
+  void pingPeers() {
+    // get location from hive, then send it to peers
+    final LatLng? loc = locationBox.get('local_position')?.toLatLng();
+    if (loc != null) {
+      _updatePeers(loc);
+    }
+  }
+
   void setS5Messenger(S5Messenger inMessenger) {
     s5messenger = inMessenger;
-    // TODO move this listener to somewhere better
+    _initializeGroupListeners();
+  }
+
+  void _initializeGroupListeners() async {
+    // gotta wait here for the groups to populate, then you can add the subscriptions
+    while (s5messenger!.groups.isEmpty) {
+      await Future.delayed(Duration(milliseconds: 250));
+    }
     // Set a listener for each group then start listening for updates of location
     for (final GroupState group in s5messenger!.groups.values) {
-      group.messageListStateNotifier.stream.listen((_) {
-        final TextMessage message =
-            (group.messagesMemory.first.msg as TextMessage);
-        if (message.embed != null) {
-          logger.d(
-              "Decode coords: ${_decodeLatLng(message.embed!).latitude}, ${_decodeLatLng(message.embed!).longitude}");
-        } else {
-          logger.d("Message had no geo embed");
-        }
-      });
+      _setupListenToPeer(group);
     }
+  }
+
+  // Standard way to begin listening to a peer and add subscription
+  void _setupListenToPeer(GroupState group) {
+    logger.d("Listening for group ${group.groupId}");
+
+    // Add the subscription to the set
+    final subscription = group.messageListStateNotifier.stream.listen((_) {
+      final TextMessage message =
+          (group.messagesMemory.first.msg as TextMessage);
+      // Skip message if from self
+      if (message.senderId == userID) {
+        return;
+      }
+      logger.d("Message incoming!");
+      if (message.embed != null) {
+        // TODO actually do something with these cords
+        logger.d(
+            "Decode coords: ${_decodeLatLng(message.embed!).latitude}, ${_decodeLatLng(message.embed!).longitude}");
+      } else {
+        logger.d("Message had no geo embed");
+      }
+    });
+
+    _chatListeners.add(subscription);
   }
 
   // On every location update, this guy'll check which groups are good to ping,
@@ -120,9 +167,13 @@ class LocationService {
         GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
         // Now if the location should be shared, share the current location
         if (groupSettings.shareLocation == true) {
-          s5messenger!
-              .group(group.key)
-              .sendMessage("location update", locationBytes);
+          s5messenger!.group(group.key).sendMessage(
+                "location update",
+                locationBytes,
+                userID,
+                _uuid.v4(),
+              );
+          logger.d("sent location");
         }
       }
     }

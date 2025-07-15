@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// MapView is the main maplibre/protomaps map that this app uses
 class MapView extends StatelessWidget {
   final LocationService locationService;
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
   const MapView({
     super.key,
     required this.locationService,
@@ -70,6 +70,17 @@ class MapView extends StatelessWidget {
                           ),
                         ),
                       ),
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: Center(
+                        child: FloatingActionButton(
+                          onPressed: () => locationService.pingPeers(),
+                          mini: true,
+                          child: const Icon(Icons.send),
+                        ),
+                      ),
+                    ),
                   ],
                 );
               },

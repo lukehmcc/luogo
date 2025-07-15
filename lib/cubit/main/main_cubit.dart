@@ -10,14 +10,16 @@ import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 class MainCubit extends Cubit<MainState> {
   MainCubit() : super(MainStateInitial());
 
   late final S5 s5;
   late final S5Messenger s5messenger;
-  late final SharedPreferences prefs;
+  late final SharedPreferencesWithCache prefs;
   late final LocationService locationService;
+  late final String userID;
 
   Future<void> initializeApp() async {
     try {
@@ -25,16 +27,30 @@ class MainCubit extends Cubit<MainState> {
       emit(MainStateLoading());
 
       // Do the quick dependencies
-      prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferencesWithCache.create(
+          cacheOptions: SharedPreferencesWithCacheOptions());
+
+      // grab that user id
+      final String? id = prefs.getString("user-id");
+      if (id == null) {
+        userID = Uuid().v4();
+        prefs.setString("user-id", userID);
+      } else {
+        userID = id;
+      }
+
+      // Begin the rust stuff
       await RustLib.init();
       final dir = await getApplicationDocumentsDirectory();
       Hive
         ..init(path.join(dir.path, 'hive'))
         ..registerAdapters();
-      locationService = LocationService(prefs: prefs);
+      locationService = LocationService(prefs: prefs, userID: userID);
       await locationService.startPeriodicUpdates(intervalSeconds: 5);
       emit(MainStateLightInitialized(
-          prefs: prefs, locationService: locationService));
+          prefs: prefs,
+          locationService: locationService,
+          userID: userID)); // Let the UI build on the quick deps
 
       // Do the slower dependeinces
       s5 = await S5.create(
@@ -51,11 +67,11 @@ class MainCubit extends Cubit<MainState> {
       s5messenger = S5Messenger();
       await s5messenger.init(s5);
       emit(MainStateHeavyInitialized(
-        s5: s5,
-        s5messenger: s5messenger,
-        prefs: prefs,
-        locationService: locationService,
-      ));
+          s5: s5,
+          s5messenger: s5messenger,
+          prefs: prefs,
+          locationService: locationService,
+          userID: userID));
     } catch (e) {
       logger.e('Initialization error: $e');
       emit(MainStateError(e.toString()));

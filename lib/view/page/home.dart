@@ -14,11 +14,15 @@ import 'package:luogo/view/widgets/silly_progress_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
   final LocationService locationService;
+  final String userID;
 
   const HomePage(
-      {super.key, required this.prefs, required this.locationService});
+      {super.key,
+      required this.prefs,
+      required this.locationService,
+      required this.userID});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +60,10 @@ class HomePage extends StatelessWidget {
                     builder: (context, isInitialized) {
                       if (isInitialized) {
                         // Gotta feed the messenger to location service so it can update peers
-                        locationService.setS5Messenger(mainCubit.s5messenger);
+                        // make sure to not do it multiple times though to only have 1 listener going
+                        if (locationService.s5messenger == null) {
+                          locationService.setS5Messenger(mainCubit.s5messenger);
+                        }
                         return BlocProvider<MapOverlayCubit>(
                             create: (BuildContext context) => MapOverlayCubit(
                                 selectedGroup: homeCubit.group,
@@ -65,6 +72,7 @@ class HomePage extends StatelessWidget {
                               groupInfo: homeCubit.group,
                               s5messenger: mainCubit.s5messenger,
                               prefs: prefs,
+                              userID: userID,
                             ));
                       } else {
                         return Container();

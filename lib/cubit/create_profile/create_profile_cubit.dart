@@ -24,7 +24,7 @@ Color getRandomLightColor() {
 
 // Cubit for state management
 class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
-  final SharedPreferences prefs;
+  final SharedPreferencesWithCache prefs;
 
   CreateProfilePageCubit({required this.prefs})
       : super(CreateProfileInitial()) {
