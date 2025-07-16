@@ -5,8 +5,8 @@ import 'package:hive_ce/hive.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/hive_latlng.dart';
+import 'package:luogo/model/message_embed.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:msgpack_dart/msgpack_dart.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -36,7 +36,7 @@ class LocationService {
   late Box<HiveLatLng> locationBox;
   S5Messenger? s5messenger;
   Set<StreamSubscription> _chatListeners = <StreamSubscription<dynamic>>{};
-  Uuid _uuid = Uuid();
+  final Uuid _uuid = Uuid();
 
   /// Call this to start periodic location updates.
   /// Currently using live updates, not the intervals
@@ -127,12 +127,12 @@ class LocationService {
     }
     // Set a listener for each group then start listening for updates of location
     for (final GroupState group in s5messenger!.groups.values) {
-      _setupListenToPeer(group);
+      setupListenToPeer(group);
     }
   }
 
   // Standard way to begin listening to a peer and add subscription
-  void _setupListenToPeer(GroupState group) {
+  void setupListenToPeer(GroupState group) {
     logger.d("Listening for group ${group.groupId}");
 
     // Add the subscription to the set
@@ -146,8 +146,10 @@ class LocationService {
       logger.d("Message incoming!");
       if (message.embed != null) {
         // TODO actually do something with these cords
+        final MessageEmbed messageEmbed =
+            MessageEmbed.fromMsgpack(message.embed!);
         logger.d(
-            "Decode coords: ${_decodeLatLng(message.embed!).latitude}, ${_decodeLatLng(message.embed!).longitude}");
+            "Decode:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
       } else {
         logger.d("Message had no geo embed");
       }
@@ -159,7 +161,8 @@ class LocationService {
   // On every location update, this guy'll check which groups are good to ping,
   // then send them the locaiton
   Future<void> _updatePeers(LatLng latLng) async {
-    Uint8List locationBytes = _latLngToMsgpack(latLng);
+    final Uint8List messageEmbedBytes =
+        MessageEmbed.fromPrefs(latLng, prefs).toMsgpack();
     // Will run all the time, but won't actually do anything if s5Messenger isn't ready
     if (s5messenger != null) {
       for (final MapEntry<String, GroupState> group
@@ -169,7 +172,7 @@ class LocationService {
         if (groupSettings.shareLocation == true) {
           s5messenger!.group(group.key).sendMessage(
                 "location update",
-                locationBytes,
+                messageEmbedBytes,
                 userID,
                 _uuid.v4(),
               );
@@ -177,15 +180,6 @@ class LocationService {
         }
       }
     }
-  }
-
-  LatLng _decodeLatLng(Uint8List msgpackBytes) {
-    final List<dynamic> coordinates = deserialize(msgpackBytes);
-    return LatLng(coordinates[0] as double, coordinates[1] as double);
-  }
-
-  Uint8List _latLngToMsgpack(LatLng latLng) {
-    return serialize([latLng.latitude, latLng.longitude]);
   }
 
   void dispose() {

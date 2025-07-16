@@ -4,13 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:uuid/uuid.dart';
 
 class KeypairQRCubit extends Cubit<KeypairQRState> {
   final S5Messenger s5messenger;
   final String userID;
-  KeypairQRCubit({required this.s5messenger, required this.userID})
+  final LocationService locationService;
+  KeypairQRCubit(
+      {required this.s5messenger,
+      required this.userID,
+      required this.locationService})
       : super(KeypairQRInitial());
 
   bool isQRSelected = true;
@@ -39,6 +44,9 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
     );
     s5messenger.messengerState.groupId = groupId;
     s5messenger.messengerState.update();
+
+    //add group listener to locationservice to get updates
+    locationService.setupListenToPeer(s5messenger.group(groupId));
 
     // Pop the dialog once it's done
     emit(KeypairQRScannedWelcomeMessage());

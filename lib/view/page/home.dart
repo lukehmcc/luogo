@@ -71,6 +71,7 @@ class HomePage extends StatelessWidget {
                             child: MapOverlay(
                               groupInfo: homeCubit.group,
                               s5messenger: mainCubit.s5messenger,
+                              locationService: locationService,
                               prefs: prefs,
                               userID: userID,
                             ));

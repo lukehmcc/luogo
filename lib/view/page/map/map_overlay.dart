@@ -5,6 +5,7 @@ import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_state.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map/group_sheet.dart';
 import 'package:luogo/view/page/map/keypair_qr_read_write_dialog.dart';
 import 'package:s5_messenger/s5_messenger.dart';
@@ -16,12 +17,14 @@ class MapOverlay extends StatelessWidget {
   final S5Messenger s5messenger;
   final SharedPreferencesWithCache prefs;
   final String userID;
+  final LocationService locationService;
   const MapOverlay(
       {super.key,
       required this.groupInfo,
       required this.s5messenger,
       required this.prefs,
-      required this.userID});
+      required this.userID,
+      required this.locationService});
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +39,9 @@ class MapOverlay extends StatelessWidget {
                   builder: (BuildContext context) {
                     return BlocProvider<KeypairQRCubit>(
                       create: (BuildContext context) => KeypairQRCubit(
-                          s5messenger: s5messenger, userID: userID),
+                          s5messenger: s5messenger,
+                          userID: userID,
+                          locationService: locationService),
                       child: KeypairQrReadWriteDialog(
                           keypair: mapOverlayState.keypair),
                     );
@@ -114,7 +119,9 @@ class MapOverlay extends StatelessWidget {
                 builder: (BuildContext context) {
                   return BlocProvider<KeypairQRCubit>(
                     create: (BuildContext context) => KeypairQRCubit(
-                        s5messenger: s5messenger, userID: userID),
+                        s5messenger: s5messenger,
+                        userID: userID,
+                        locationService: locationService),
                     child: KeypairQrReadWriteDialog(
                         keypair: mapOverlayState.keypair),
                   );
