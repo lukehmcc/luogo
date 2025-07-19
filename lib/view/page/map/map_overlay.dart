@@ -86,7 +86,8 @@ class _MapOverlayContent extends StatelessWidget {
                     create: (BuildContext context) => GroupSheetCubit(
                         s5messenger: s5messenger,
                         groupInfo: groupInfo!,
-                        prefs: prefs),
+                        prefs: prefs,
+                        locationService: locationService),
                     child: GroupSheet(
                       groupInfo: groupInfo!,
                       s5messenger: s5messenger,

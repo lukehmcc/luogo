@@ -68,7 +68,9 @@ class GroupSheet extends StatelessWidget {
                       for (final member
                           in s5messenger.group(groupInfo.id).members)
                         ListTile(
-                          title: Text(utf8.decode(member.identity)),
+                          title: Text(BlocProvider.of<GroupSheetCubit>(context)
+                                  .userNameFromSigkey(member.signatureKey) ??
+                              utf8.decode(member.identity)),
                         )
                     ],
                   );
