@@ -5,6 +5,7 @@ import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
+import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
@@ -16,13 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HomePage extends StatelessWidget {
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  final String userID;
 
-  const HomePage(
-      {super.key,
-      required this.prefs,
-      required this.locationService,
-      required this.userID});
+  const HomePage({
+    super.key,
+    required this.prefs,
+    required this.locationService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +44,7 @@ class HomePage extends StatelessWidget {
                 locationService: locationService,
                 prefs: prefs,
               ),
+
               ScaffoldDrawerButton(),
 
               // Only show the overlay if the group doesn't exist
@@ -66,14 +67,17 @@ class HomePage extends StatelessWidget {
                         }
                         return BlocProvider<MapOverlayCubit>(
                             create: (BuildContext context) => MapOverlayCubit(
-                                selectedGroup: homeCubit.group,
-                                s5messenger: mainCubit.s5messenger),
+                                  selectedGroup: homeCubit.group,
+                                  s5messenger: mainCubit.s5messenger,
+                                  locationService: locationService,
+                                  mapController:
+                                      context.read<MapCubit>().mapController,
+                                ),
                             child: MapOverlay(
                               groupInfo: homeCubit.group,
                               s5messenger: mainCubit.s5messenger,
                               locationService: locationService,
                               prefs: prefs,
-                              userID: userID,
                             ));
                       } else {
                         return Container();

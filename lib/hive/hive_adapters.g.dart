@@ -42,3 +42,46 @@ class HiveLatLngAdapter extends TypeAdapter<HiveLatLng> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class UserStateAdapter extends TypeAdapter<UserState> {
+  @override
+  final typeId = 1;
+
+  @override
+  UserState read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return UserState(
+      coords: fields[0] as HiveLatLng,
+      ts: (fields[1] as num).toInt(),
+      name: fields[2] as String,
+      color: (fields[3] as num).toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, UserState obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.coords)
+      ..writeByte(1)
+      ..write(obj.ts)
+      ..writeByte(2)
+      ..write(obj.name)
+      ..writeByte(3)
+      ..write(obj.color);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserStateAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

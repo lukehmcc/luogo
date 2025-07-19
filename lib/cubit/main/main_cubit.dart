@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/cubit/main/main_state.dart';
@@ -10,7 +12,6 @@ import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
-import 'package:uuid/uuid.dart';
 
 class MainCubit extends Cubit<MainState> {
   MainCubit() : super(MainStateInitial());
@@ -19,7 +20,6 @@ class MainCubit extends Cubit<MainState> {
   late final S5Messenger s5messenger;
   late final SharedPreferencesWithCache prefs;
   late final LocationService locationService;
-  late final String userID;
 
   Future<void> initializeApp() async {
     try {
@@ -30,27 +30,18 @@ class MainCubit extends Cubit<MainState> {
       prefs = await SharedPreferencesWithCache.create(
           cacheOptions: SharedPreferencesWithCacheOptions());
 
-      // grab that user id
-      final String? id = prefs.getString("user-id");
-      if (id == null) {
-        userID = Uuid().v4();
-        prefs.setString("user-id", userID);
-      } else {
-        userID = id;
-      }
-
       // Begin the rust stuff
       await RustLib.init();
-      final dir = await getApplicationDocumentsDirectory();
+      final Directory dir = await getApplicationSupportDirectory();
       Hive
         ..init(path.join(dir.path, 'hive'))
         ..registerAdapters();
-      locationService = LocationService(prefs: prefs, userID: userID);
+      locationService = LocationService(prefs: prefs);
       await locationService.startPeriodicUpdates(intervalSeconds: 5);
       emit(MainStateLightInitialized(
-          prefs: prefs,
-          locationService: locationService,
-          userID: userID)); // Let the UI build on the quick deps
+        prefs: prefs,
+        locationService: locationService,
+      )); // Let the UI build on the quick deps
 
       // Do the slower dependeinces
       s5 = await S5.create(
@@ -67,11 +58,11 @@ class MainCubit extends Cubit<MainState> {
       s5messenger = S5Messenger();
       await s5messenger.init(s5);
       emit(MainStateHeavyInitialized(
-          s5: s5,
-          s5messenger: s5messenger,
-          prefs: prefs,
-          locationService: locationService,
-          userID: userID));
+        s5: s5,
+        s5messenger: s5messenger,
+        prefs: prefs,
+        locationService: locationService,
+      ));
     } catch (e) {
       logger.e('Initialization error: $e');
       emit(MainStateError(e.toString()));

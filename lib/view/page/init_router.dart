@@ -4,6 +4,7 @@ import 'package:luogo/cubit/init_router/init_router_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
+import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/create_profile.dart';
 import 'package:luogo/view/page/home.dart';
@@ -23,31 +24,28 @@ class InitRouterPage extends StatelessWidget {
         MainStateLightInitialized(
           :final prefs,
           :final locationService,
-          :final userID
         ) =>
-          _buildInitRouterPage(context, prefs, locationService, userID),
+          _buildInitRouterPage(context, prefs, locationService),
         MainStateHeavyInitialized(
           :final prefs,
           :final locationService,
-          :final userID
         ) =>
-          _buildInitRouterPage(context, prefs, locationService, userID),
+          _buildInitRouterPage(context, prefs, locationService),
       };
     });
   }
 
   Widget _buildInitRouterPage(
-      BuildContext context,
-      SharedPreferencesWithCache prefs,
-      LocationService locationService,
-      String userID) {
+    BuildContext context,
+    SharedPreferencesWithCache prefs,
+    LocationService locationService,
+  ) {
     return BlocProvider(
       create: (context) => InitRouterCubit(prefs: prefs)..checkPreferences(),
       child: BlocListener<InitRouterCubit, InitRouterState>(
         listener: (context, state) {
           if (state is InitRouterSuccess) {
-            _navigateBasedOnRoute(
-                context, state.route, prefs, locationService, userID);
+            _navigateBasedOnRoute(context, state.route, prefs, locationService);
           }
         },
         child: SillyCircularProgressIndicator(),
@@ -56,21 +54,24 @@ class InitRouterPage extends StatelessWidget {
   }
 
   void _navigateBasedOnRoute(
-      BuildContext context,
-      RouteType route,
-      SharedPreferencesWithCache prefs,
-      LocationService locationService,
-      String userID) {
+    BuildContext context,
+    RouteType route,
+    SharedPreferencesWithCache prefs,
+    LocationService locationService,
+  ) {
     final page = route == RouteType.home
-        ? HomePage(
-            prefs: prefs,
-            locationService: locationService,
-            userID: userID,
-          )
+        ? BlocProvider<MapCubit>(
+            create: (context) => MapCubit(
+                  locationService: locationService,
+                  prefs: prefs,
+                ),
+            child: HomePage(
+              prefs: prefs,
+              locationService: locationService,
+            ))
         : CreateProfilePage(
             prefs: prefs,
             locationService: locationService,
-            userID: userID,
           );
 
     Navigator.pushAndRemoveUntil(context,

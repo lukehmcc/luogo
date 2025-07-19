@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:luogo/cubit/home/home_cubit.dart';
+import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
@@ -16,14 +18,43 @@ class MapOverlay extends StatelessWidget {
   final GroupInfo? groupInfo;
   final S5Messenger s5messenger;
   final SharedPreferencesWithCache prefs;
-  final String userID;
   final LocationService locationService;
   const MapOverlay(
       {super.key,
       required this.groupInfo,
       required this.s5messenger,
       required this.prefs,
-      required this.userID,
+      required this.locationService});
+
+  @override
+  Widget build(BuildContext context) {
+    // put a listener here so whenever the group is changed the mapoverlay can respond to that
+    return BlocListener<HomeCubit, HomeState>(
+        listener: (BuildContext context, HomeState homeState) {
+          if (homeState is HomeGroupSelected) {
+            BlocProvider.of<MapOverlayCubit>(context)
+                .groupSelectedEngagePins(homeState.group);
+          }
+        },
+        child: _MapOverlayContent(
+          groupInfo: groupInfo,
+          s5messenger: s5messenger,
+          prefs: prefs,
+          locationService: locationService,
+        ));
+  }
+}
+
+// Put the content here so I can wrap it in a listener properly
+class _MapOverlayContent extends StatelessWidget {
+  final GroupInfo? groupInfo;
+  final S5Messenger s5messenger;
+  final SharedPreferencesWithCache prefs;
+  final LocationService locationService;
+  const _MapOverlayContent(
+      {required this.groupInfo,
+      required this.s5messenger,
+      required this.prefs,
       required this.locationService});
 
   @override
@@ -40,7 +71,6 @@ class MapOverlay extends StatelessWidget {
                     return BlocProvider<KeypairQRCubit>(
                       create: (BuildContext context) => KeypairQRCubit(
                           s5messenger: s5messenger,
-                          userID: userID,
                           locationService: locationService),
                       child: KeypairQrReadWriteDialog(
                           keypair: mapOverlayState.keypair),
@@ -120,7 +150,6 @@ class MapOverlay extends StatelessWidget {
                   return BlocProvider<KeypairQRCubit>(
                     create: (BuildContext context) => KeypairQRCubit(
                         s5messenger: s5messenger,
-                        userID: userID,
                         locationService: locationService),
                     child: KeypairQrReadWriteDialog(
                         keypair: mapOverlayState.keypair),

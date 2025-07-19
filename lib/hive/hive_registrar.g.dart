@@ -8,11 +8,13 @@ import 'package:luogo/hive/hive_adapters.dart';
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(HiveLatLngAdapter());
+    registerAdapter(UserStateAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(HiveLatLngAdapter());
+    registerAdapter(UserStateAdapter());
   }
 }

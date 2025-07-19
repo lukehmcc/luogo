@@ -10,12 +10,8 @@ import 'package:uuid/uuid.dart';
 
 class KeypairQRCubit extends Cubit<KeypairQRState> {
   final S5Messenger s5messenger;
-  final String userID;
   final LocationService locationService;
-  KeypairQRCubit(
-      {required this.s5messenger,
-      required this.userID,
-      required this.locationService})
+  KeypairQRCubit({required this.s5messenger, required this.locationService})
       : super(KeypairQRInitial());
 
   bool isQRSelected = true;
@@ -35,11 +31,14 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
       throw 'Incorrect group invite';
     }
 
+    String myID = (s5messenger.dataBox.get('identity_default')
+        as Map<dynamic, dynamic>)['publicKey'];
+
     final groupId = await s5messenger.acceptInviteAndJoinGroup(
       base64UrlNoPaddingDecode(
         welcomeMessage.substring(25),
       ),
-      userID,
+      myID,
       Uuid().v4(),
     );
     s5messenger.messengerState.groupId = groupId;

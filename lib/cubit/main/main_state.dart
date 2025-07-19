@@ -13,12 +13,10 @@ class MainStateLoading extends MainState {}
 class MainStateLightInitialized extends MainState {
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  final String userID;
 
   MainStateLightInitialized({
     required this.prefs,
     required this.locationService,
-    required this.userID,
   });
 }
 
@@ -28,14 +26,12 @@ class MainStateHeavyInitialized extends MainState {
   final S5Messenger s5messenger;
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  final String userID;
 
   MainStateHeavyInitialized({
     required this.s5,
     required this.s5messenger,
     required this.prefs,
     required this.locationService,
-    required this.userID,
   });
 }
 

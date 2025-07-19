@@ -6,6 +6,7 @@ import 'package:luogo/main.dart';
 import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/message_embed.dart';
+import 'package:luogo/model/user_state.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,22 +28,25 @@ import 'package:uuid/uuid.dart';
 class LocationService {
   // Passed in vars
   final SharedPreferencesWithCache prefs;
-  final String userID;
 
-  LocationService({required this.prefs, required this.userID});
+  LocationService({required this.prefs});
 
   // Later initialized vars
   Timer? _timer;
   late Box<HiveLatLng> locationBox;
+  late Box<UserState> userStateBox;
   S5Messenger? s5messenger;
-  Set<StreamSubscription> _chatListeners = <StreamSubscription<dynamic>>{};
+  Map<String, StreamSubscription<dynamic>> groupListeners =
+      <String, StreamSubscription<dynamic>>{};
   final Uuid _uuid = Uuid();
+  String? myID;
 
   /// Call this to start periodic location updates.
   /// Currently using live updates, not the intervals
   Future<void> startPeriodicUpdates({int intervalSeconds = 5}) async {
     // Check permissions first
-    locationBox = await Hive.openBox('location');
+    locationBox = await Hive.openBox<HiveLatLng>('location');
+    userStateBox = await Hive.openBox<UserState>('userState');
     bool hasPermission = await _checkLocationPermission();
     if (!hasPermission) return;
 
@@ -117,6 +121,9 @@ class LocationService {
 
   void setS5Messenger(S5Messenger inMessenger) {
     s5messenger = inMessenger;
+    // Set you ID so it can be used later
+    myID = (s5messenger!.dataBox.get('identity_default')
+        as Map<dynamic, dynamic>)['publicKey'];
     _initializeGroupListeners();
   }
 
@@ -140,40 +147,51 @@ class LocationService {
       final TextMessage message =
           (group.messagesMemory.first.msg as TextMessage);
       // Skip message if from self
-      if (message.senderId == userID) {
+      if (message.senderId == myID) {
         return;
       }
       logger.d("Message incoming!");
       if (message.embed != null) {
-        // TODO actually do something with these cords
         final MessageEmbed messageEmbed =
             MessageEmbed.fromMsgpack(message.embed!);
+        // Create user state then push it to hive
+        final UserState newUserState = UserState(
+          coords: HiveLatLng(
+              lat: messageEmbed.coordinates.latitude,
+              long: messageEmbed.coordinates.longitude),
+          ts: DateTime.now().millisecondsSinceEpoch,
+          name: messageEmbed.name,
+          color: messageEmbed.color.toARGB32(),
+        );
+
+        userStateBox.put(message.senderId, newUserState);
+
         logger.d(
             "Decode:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
       } else {
         logger.d("Message had no geo embed");
       }
     });
-
-    _chatListeners.add(subscription);
+    groupListeners[group.groupId] = subscription;
   }
 
   // On every location update, this guy'll check which groups are good to ping,
   // then send them the locaiton
   Future<void> _updatePeers(LatLng latLng) async {
     final Uint8List messageEmbedBytes =
-        MessageEmbed.fromPrefs(latLng, prefs).toMsgpack();
+        MessageEmbed.fromPrefs(latLng, prefs, null).toMsgpack();
     // Will run all the time, but won't actually do anything if s5Messenger isn't ready
     if (s5messenger != null) {
       for (final MapEntry<String, GroupState> group
           in s5messenger!.groups.entries) {
         GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
         // Now if the location should be shared, share the current location
-        if (groupSettings.shareLocation == true) {
+        if (groupSettings.shareLocation == true && myID != null) {
+          // grab ID
           s5messenger!.group(group.key).sendMessage(
                 "location update",
                 messageEmbedBytes,
-                userID,
+                myID!,
                 _uuid.v4(),
               );
           logger.d("sent location");

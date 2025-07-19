@@ -99,8 +99,6 @@ class MapCubit extends Cubit<MapState> {
   void _addUserIcon() async {
     if (_userPosition != null) {
       // Now add personal users
-      // TODO Make a better way to handle this and others
-      // TODO Handle filling in the circle
       // First load in the image (and get user prefs)
       String? name = prefs.getString('name');
       int colorValue = prefs.getInt('color') ?? 0;

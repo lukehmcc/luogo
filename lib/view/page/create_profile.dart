@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:luogo/cubit/create_profile/create_profile_cubit.dart';
 import 'package:luogo/cubit/create_profile/create_profile_state.dart';
+import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,12 +11,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CreateProfilePage extends StatelessWidget {
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  final String userID;
-  const CreateProfilePage(
-      {super.key,
-      required this.prefs,
-      required this.locationService,
-      required this.userID});
+  const CreateProfilePage({
+    super.key,
+    required this.prefs,
+    required this.locationService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +38,15 @@ class CreateProfilePage extends StatelessWidget {
               Navigator.pushAndRemoveUntil<dynamic>(
                   context,
                   MaterialPageRoute<dynamic>(
-                      builder: (BuildContext context) => HomePage(
+                      builder: (BuildContext context) => BlocProvider<MapCubit>(
+                          create: (context) => MapCubit(
+                                locationService: locationService,
+                                prefs: prefs,
+                              ),
+                          child: HomePage(
                             prefs: prefs,
                             locationService: locationService,
-                            userID: userID,
-                          )),
+                          ))),
                   (Route<dynamic> route) => false);
             }
           },
