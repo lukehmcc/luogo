@@ -1,16 +1,21 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:luogo/hive/hive_registrar.g.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/message_embed.dart';
 import 'package:luogo/model/user_state.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:s5/s5.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as path;
 
 /// A service for periodically fetching and storing the device's current location.
 ///
@@ -57,7 +62,7 @@ class LocationService {
     LatLng? lastSentPosition;
     _timer = Timer.periodic(Duration(minutes: 1), (timer) async {
       if (lastSentPosition != null) {
-        // await _updatePeers(lastSentPosition!);
+        await _updatePeers(lastSentPosition!);
       }
     });
 
@@ -67,6 +72,51 @@ class LocationService {
       lastSentPosition = latLng;
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
     });
+  }
+
+  // static initializer for the background task
+  static Future<LocationService> initializeForBackground() async {
+    // Initialize dependencies just like in MainCubit
+    final prefs = await SharedPreferencesWithCache.create(
+        cacheOptions: SharedPreferencesWithCacheOptions());
+
+    await RustLib.init();
+    final Directory dir = await getApplicationSupportDirectory();
+    Hive
+      ..init(path.join(dir.path, 'hive'))
+      ..registerAdapters();
+
+    final service = LocationService(prefs: prefs);
+
+    service.locationBox = await Hive.openBox<HiveLatLng>('location');
+    service.userStateBox = await Hive.openBox<UserState>('userState');
+
+    final s5 = await S5.create(
+      persistFilePath: path.join(
+          (await getApplicationDocumentsDirectory()).path, 'persist.json'),
+    );
+    final s5messenger = S5Messenger();
+    await s5messenger.init(s5);
+    service.setS5Messenger(s5messenger);
+
+    return service;
+  }
+
+  // A oneshot, non-continuous way to send location updates
+  Future<void> sendLocationUpdateOneShot() async {
+    bool hasPermission = await _checkLocationPermission();
+    if (!hasPermission) {
+      logger.w("Background task: No location permission.");
+      return;
+    }
+
+    try {
+      final Position position = await Geolocator.getCurrentPosition();
+      final LatLng latLng = LatLng(position.latitude, position.longitude);
+      await _updatePeers(latLng);
+    } catch (e) {
+      logger.e('Error fetching/sending location in background: $e');
+    }
   }
 
   // Internal location fetcher for oneshots
@@ -110,7 +160,7 @@ class LocationService {
         permission == LocationPermission.always;
   }
 
-  // TODO delete this
+  // Quick peer pinger function
   void pingPeers() {
     // get location from hive, then send it to peers
     final LatLng? loc = locationBox.get('local_position')?.toLatLng();

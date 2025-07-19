@@ -33,6 +33,16 @@
   <string>Camera permission is required for barcode scanning.</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>This app needs photos access to get QR code from photo library</string>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>processing</string>
+    <string>fetch</string>
+  </array>
+  <key>BGTaskSchedulerPermittedIdentifiers</key>
+  <array>
+    <string>task-identifier</string>
+    <string>app.luogo.app.iOSBackgroundAppRefresh</string>
+  </array>
 
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
