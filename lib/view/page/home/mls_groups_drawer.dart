@@ -14,47 +14,42 @@ class GroupsDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-        child: SafeArea(
-      child: Column(
+      child: SafeArea(
+          child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                context.read<GroupsDrawerCubit>().createGroup();
-              },
-              child: const Text('Create Group'),
-            ),
+          BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
+            builder: (context, state) {
+              if (state is GroupsDrawerLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is GroupsDrawerError) {
+                return Center(child: Text(state.message));
+              }
+              if (state is GroupsDrawerLoaded) {
+                // if a group is selected, make sure to set the homestate
+                if (state.group != null) {
+                  final homeCubit = BlocProvider.of<HomeCubit>(context);
+                  homeCubit.groupSelected(state.group!);
+                }
+                return GroupListView(
+                  groups: state.groups,
+                  s5messenger: s5messenger,
+                );
+              }
+              return const SizedBox(); // Initial state
+            },
           ),
-          const SizedBox(height: 8),
-          const Divider(),
-          Expanded(
-            child: BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
-              builder: (context, state) {
-                if (state is GroupsDrawerLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state is GroupsDrawerError) {
-                  return Center(child: Text(state.message));
-                }
-                if (state is GroupsDrawerLoaded) {
-                  // if a group is selected, make sure to set the homestate
-                  if (state.group != null) {
-                    final homeCubit = BlocProvider.of<HomeCubit>(context);
-                    homeCubit.groupSelected(state.group!);
-                  }
-                  return GroupListView(
-                    groups: state.groups,
-                    s5messenger: s5messenger,
-                  );
-                }
-                return const SizedBox(); // Initial state
-              },
+          Positioned(
+            right: 20,
+            bottom: 20,
+            child: FloatingActionButton(
+              onPressed: context.read<GroupsDrawerCubit>().createGroup,
+              child: const Icon(Icons.add),
             ),
-          ),
+          )
         ],
-      ),
-    ));
+      )),
+    );
   }
 }
 
