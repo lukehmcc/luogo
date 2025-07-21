@@ -83,15 +83,17 @@ class _MapOverlayContent extends StatelessWidget {
               showModalBottomSheet<dynamic>(
                 context: context,
                 builder: (BuildContext context) {
-                  return BlocProvider<GroupSheetCubit>(
-                    create: (BuildContext context) => GroupSheetCubit(
-                        s5messenger: s5messenger,
+                  return Scaffold(
+                    body: BlocProvider<GroupSheetCubit>(
+                      create: (BuildContext context) => GroupSheetCubit(
+                          s5messenger: s5messenger,
+                          groupInfo: groupInfo!,
+                          prefs: prefs,
+                          locationService: locationService),
+                      child: GroupSheet(
                         groupInfo: groupInfo!,
-                        prefs: prefs,
-                        locationService: locationService),
-                    child: GroupSheet(
-                      groupInfo: groupInfo!,
-                      s5messenger: s5messenger,
+                        s5messenger: s5messenger,
+                      ),
                     ),
                   );
                 },

@@ -7,7 +7,31 @@ import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/cubit/map/map_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// MapView is the main maplibre/protomaps map that this app uses
+/// The primary map interface widget using MapLibre GL for map rendering.
+///
+/// This widget provides:
+/// - Interactive map display with style configuration
+/// - User location tracking functionality
+/// - Bottom sheet modals for symbol/point interactions
+/// - Floating action buttons for map navigation
+///
+/// Dependencies:
+/// - [locationService]: Handles location updates and peer communication
+/// - [prefs]: Shared preferences for persistent settings
+///
+/// Behavior:
+/// - Listens to [MapCubit] state changes for UI updates
+/// - Shows [BottomSheetInfoModal] when map symbols are clicked
+/// - Provides "recenter" and "send location" FAB controls
+/// - Initializes with default camera position (LatLng(1,1) at zoom 10)
+///
+/// UI Structure:
+/// 1. Base MapLibre map (full screen)
+/// 2. Floating action buttons:
+///    - Right: Recenter map to user location
+/// 3. Dynamic bottom sheet modal for point information
+///
+/// Note: Uses 'assets/pmtiles_style.json' for map styling configuration
 class MapView extends StatelessWidget {
   final LocationService locationService;
   final SharedPreferencesWithCache prefs;
@@ -64,17 +88,6 @@ class MapView extends StatelessWidget {
                       ),
                     ),
                   ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  child: Center(
-                    child: FloatingActionButton(
-                      onPressed: () => locationService.pingPeers(),
-                      mini: true,
-                      child: const Icon(Icons.send),
-                    ),
-                  ),
-                ),
               ],
             );
           },

@@ -11,6 +11,30 @@ import 'package:luogo/view/page/map/invite_user_qr_dialog.dart';
 import 'package:luogo/view/widgets/circle_avatar_styled_named.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
+/// A stateless widget that displays a group information sheet with member list and controls.
+///
+/// This widget provides:
+/// - Group name display
+/// - Member list with avatars
+/// - Location sharing toggle
+/// - One-time location send button
+/// - User invitation functionality
+///
+/// Dependencies:
+/// - [groupInfo]: Contains group metadata (name, ID, etc.)
+/// - [s5messenger]: Handles group messaging and member management
+///
+/// Behavior:
+/// - Listens to [GroupSheetCubit] state changes
+/// - Shows [InviteUserQrDialog] when invite button is pressed
+/// - Displays real-time member list updates via [StreamBuilder]
+/// - Maintains UI consistency with the current [GroupSheetState]
+///
+/// Layout Structure:
+/// 1. Group name header
+/// 2. Action buttons row (Invite User, Send Location)
+/// 3. Location sharing toggle
+/// 4. Members list section
 class GroupSheet extends StatelessWidget {
   final GroupInfo groupInfo;
   final S5Messenger s5messenger;
@@ -33,6 +57,13 @@ class GroupSheet extends StatelessWidget {
                 );
               });
         }
+        if (groupSheetState is GroupSheetShareLocationOneShot) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Send location to peers'),
+            ),
+          );
+        }
       },
       child: BlocBuilder<GroupSheetCubit, GroupSheetState>(
         builder: (BuildContext context, GroupSheetState state) {
@@ -42,10 +73,21 @@ class GroupSheet extends StatelessWidget {
             children: <Widget>[
               Text(groupInfo.name,
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
-              ElevatedButton(
-                  onPressed: () =>
-                      groupSheetCubit.showInviteUserScreen(context),
-                  child: Text("Invite User")),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  ElevatedButton(
+                      onPressed: () =>
+                          groupSheetCubit.showInviteUserScreen(context),
+                      child: Text("Invite User")),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  ElevatedButton(
+                      onPressed: groupSheetCubit.sendLocationOneshot,
+                      child: Text("Send Location (once)")),
+                ],
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[

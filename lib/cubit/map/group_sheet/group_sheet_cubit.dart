@@ -13,7 +13,24 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Defines the state for the group sheet
+/// A Cubit that manages the state and logic for the group sheet UI component.
+///
+/// This cubit handles:
+/// - Managing the share location toggle state
+/// - Showing the invite user dialog
+/// - Converting member signatures to user states
+/// - Sending one-time location updates
+///
+/// Dependencies:
+/// - [s5messenger]: The S5 messaging service
+/// - [groupInfo]: Information about the current group
+/// - [prefs]: Shared preferences with caching
+/// - [locationService]: Service for handling location-related functionality
+///
+/// Initial state: [GroupSheetInitial]
+/// Possible states:
+/// - [GroupSheetInviteDialogPressed]
+/// - [GroupSheetShareLocationUpdated]
 class GroupSheetCubit extends Cubit<GroupSheetState> {
   S5Messenger s5messenger;
   GroupInfo groupInfo;
@@ -44,6 +61,7 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
     await GroupSettings.save(prefs, groupSettings);
   }
 
+  // Pass in the signed key and get back information about the user to draw
   UserState? userStateFromSigkey(Uint8List sigkey) {
     final String memberID = base64UrlNoPaddingEncode(sigkey);
     final String? yourID = (s5messenger.dataBox.get('identity_default')
@@ -64,5 +82,11 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
       final UserState? userState = locationService.userStateBox.get(memberID);
       return userState;
     }
+  }
+
+  // sends the user location just that once without enableing live location
+  void sendLocationOneshot() {
+    locationService.pingPeers();
+    emit(GroupSheetShareLocationOneShot());
   }
 }
