@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_state.dart';
-import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/user_state.dart';
@@ -45,8 +44,15 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
 
   String? userNameFromSigkey(Uint8List sigkey) {
     final String memberID = base64UrlNoPaddingEncode(sigkey);
-    final UserState? userState = locationService.userStateBox.get(memberID);
-    logger.d(userState);
-    return userState?.name;
+    final String? yourID = (s5messenger.dataBox.get('identity_default')
+        as Map<dynamic, dynamic>)['publicKey'];
+    // If you are the user, return that
+    if (yourID == memberID) {
+      return "you";
+      // Else return their name from the box
+    } else {
+      final UserState? userState = locationService.userStateBox.get(memberID);
+      return userState?.name;
+    }
   }
 }

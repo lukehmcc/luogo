@@ -35,7 +35,6 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
     final Uint8List keypackage = await s5messenger.createKeyPackage();
     final String message =
         "luogo-user-identity:${base64UrlNoPaddingEncode(keypackage)}";
-    logger.d(message);
     emit(MapOverlayQRPopupPressed(keypair: message));
   }
 
@@ -43,7 +42,6 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   void groupSelectedEngagePins(GroupInfo groupInfo) async {
     // Nuke all the old listeners & symbols
     final controller = await mapController.future;
-    logger.d("Nuking previous pins");
     for (final Symbol symbol in _activeSymbols.values) {
       controller.removeSymbol(symbol);
     }
@@ -55,14 +53,12 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
 
     // Now add all the new guys back
     final GroupState groupState = s5messenger.group(groupInfo.id);
-    logger.d("now adding pins");
     for (final GroupMember member in groupState.members) {
       final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
 
       // First gotta add the initial symbols
       final UserState? userState = locationService.userStateBox.get(memberID);
       if (userState != null) {
-        logger.d("adding pin $memberID");
         await addImageFromAsset(
             controller,
             "pin-drop-$memberID",
@@ -89,7 +85,6 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
           final UserState userState = event.value;
           // If it hasn't been added, add it
           if (_activeSymbols[memberID] == null) {
-            logger.d("adding pin $memberID");
             await addImageFromAsset(
                 controller,
                 "pin-drop-$memberID",
