@@ -6,8 +6,10 @@ import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_state.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/model/group_settings.dart';
+import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/user_state.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,17 +44,25 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
     await GroupSettings.save(prefs, groupSettings);
   }
 
-  String? userNameFromSigkey(Uint8List sigkey) {
+  UserState? userStateFromSigkey(Uint8List sigkey) {
     final String memberID = base64UrlNoPaddingEncode(sigkey);
     final String? yourID = (s5messenger.dataBox.get('identity_default')
         as Map<dynamic, dynamic>)['publicKey'];
+    final String? yourName = prefs.getString("name");
+    final int? yourColor = prefs.getInt("color");
     // If you are the user, return that
     if (yourID == memberID) {
-      return "you";
+      final UserState toReturnUserState = UserState(
+        coords: HiveLatLng.fromLatLng(LatLng(0, 0)),
+        ts: DateTime.now().millisecondsSinceEpoch,
+        name: "${yourName ?? ""} (you)",
+        color: yourColor ?? 0,
+      );
+      return toReturnUserState;
       // Else return their name from the box
     } else {
       final UserState? userState = locationService.userStateBox.get(memberID);
-      return userState?.name;
+      return userState;
     }
   }
 }

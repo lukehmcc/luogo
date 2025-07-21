@@ -6,7 +6,9 @@ import 'package:luogo/cubit/map/group_sheet/group_sheet_cubit.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_state.dart';
 import 'package:luogo/cubit/map/invite_user_qr/invite_user_qr_cubit.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/model/user_state.dart';
 import 'package:luogo/view/page/map/invite_user_qr_dialog.dart';
+import 'package:luogo/view/widgets/circle_avatar_styled_named.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 class GroupSheet extends StatelessWidget {
@@ -64,15 +66,24 @@ class GroupSheet extends StatelessWidget {
                     s5messenger.group(groupInfo.id).membersStateNotifier.stream,
                 builder: (context, snapshot) {
                   return ListView(
-                    children: [
-                      for (final member
-                          in s5messenger.group(groupInfo.id).members)
-                        ListTile(
-                          title: Text(BlocProvider.of<GroupSheetCubit>(context)
-                                  .userNameFromSigkey(member.signatureKey) ??
-                              utf8.decode(member.identity)),
-                        )
-                    ],
+                    children: s5messenger
+                        .group(groupInfo.id)
+                        .members
+                        .map<ListTile>((GroupMember member) {
+                      // define this first because will be used multiple times
+                      final UserState? userState =
+                          BlocProvider.of<GroupSheetCubit>(context)
+                              .userStateFromSigkey(member.signatureKey);
+                      return ListTile(
+                        leading: CircleAvatarStyledNamed(
+                          name: userState?.name ?? "",
+                          color: Color(userState?.color ?? 0),
+                        ),
+                        title: Text(
+                          userState?.name ?? utf8.decode(member.identity),
+                        ),
+                      );
+                    }).toList(),
                   );
                 },
               )),
