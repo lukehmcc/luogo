@@ -19,12 +19,13 @@ class MapOverlay extends StatelessWidget {
   final S5Messenger s5messenger;
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  const MapOverlay(
-      {super.key,
-      required this.groupInfo,
-      required this.s5messenger,
-      required this.prefs,
-      required this.locationService});
+  const MapOverlay({
+    super.key,
+    required this.groupInfo,
+    required this.s5messenger,
+    required this.prefs,
+    required this.locationService,
+  });
 
   @override
   Widget build(BuildContext context) {

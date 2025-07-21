@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/view/page/map/bottom_sheet_info_modal.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/cubit/map/map_state.dart';
@@ -28,14 +29,11 @@ class MapView extends StatelessWidget {
         listener: (BuildContext context, MapState state) {
           if (state is MapSymbolClicked) {
             showModalBottomSheet<dynamic>(
-              context: context,
-              builder: (BuildContext context) => SizedBox(
-                height: 200,
-                child: Center(
-                  child: Text(state.symbolID),
-                ),
-              ),
-            );
+                context: context,
+                builder: (BuildContext context) => BottomSheetInfoModal(
+                      userState: state.userState,
+                      isYou: state.isYou,
+                    ));
           }
         },
 

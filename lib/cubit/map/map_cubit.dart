@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/model/hive_latlng.dart';
+import 'package:luogo/model/user_state.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -77,6 +79,9 @@ class MapCubit extends Cubit<MapState> {
   LatLng? _userPosition; // Store position for later use
   late StreamSubscription<BoxEvent> _positionWatcher;
   Symbol? _userSymbol; // Store local user symbol to be moved
+  UserState? _localUserState;
+  Map<String, String> symbolIDMap =
+      {}; // Defines realtion between symbol & user IDs
 
   // Getters
   LatLng? get userPosition => _userPosition;
@@ -91,17 +96,36 @@ class MapCubit extends Cubit<MapState> {
     }
   }
 
+  // Callback for the user's location symbol on the map
+  // Should ping UI to update UI with a bottom sheet
   void _onSymbolTapped(Symbol symbol) {
-    emit(MapSymbolClicked(symbolID: symbol.id));
-    logger.d("Tapped Symbol: $symbol");
+    if (_localUserState != null && symbol == _userSymbol) {
+      emit(MapSymbolClicked(userState: _localUserState!, isYou: true));
+    } else {
+      final String userID = symbolIDMap[symbol.id] ?? "";
+      final UserState? userState = locationService.userStateBox.get(userID);
+      if (userState != null) {
+        emit(MapSymbolClicked(userState: userState, isYou: false));
+      } else {
+        logger.e("user: userID is null");
+      }
+    }
   }
 
+  // Callback to add the local user's icon to the map
+  // Hadnling the local user & other users is seperate because we want
+  // this one to load fast before s5messenger can load (which can take a couple seconds)
   void _addUserIcon() async {
     if (_userPosition != null) {
       // Now add personal users
       // First load in the image (and get user prefs)
       String? name = prefs.getString('name');
       int colorValue = prefs.getInt('color') ?? 0;
+      _localUserState = UserState(
+          coords: HiveLatLng.fromLatLng(userPosition!),
+          ts: DateTime.now().millisecondsSinceEpoch,
+          name: name ?? "",
+          color: colorValue);
       Color selectedColor = Color(colorValue);
       final controller = await mapController.future;
       await addImageFromAsset(controller, "pin-drop", "assets/pin.png",
@@ -113,6 +137,8 @@ class MapCubit extends Cubit<MapState> {
           iconImage: "pin-drop",
           iconSize: 1.0,
           iconAnchor: 'bottom'));
+      // We don't have to add this user to the map because we store the symbol locally
+      // we also can't because s5messenger hasn't necesarily been loaded yet
       logger.d("added image asset");
     }
   }

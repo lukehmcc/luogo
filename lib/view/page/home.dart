@@ -72,6 +72,8 @@ class HomePage extends StatelessWidget {
                                   locationService: locationService,
                                   mapController:
                                       context.read<MapCubit>().mapController,
+                                  symbolIDMap:
+                                      context.read<MapCubit>().symbolIDMap,
                                 ),
                             child: MapOverlay(
                               groupInfo: homeCubit.group,

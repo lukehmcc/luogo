@@ -18,11 +18,13 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   S5Messenger s5messenger;
   LocationService locationService;
   Completer<MapLibreMapController> mapController;
+  Map<String, String> symbolIDMap;
   MapOverlayCubit({
     required this.selectedGroup,
     required this.s5messenger,
     required this.locationService,
     required this.mapController,
+    required this.symbolIDMap,
   }) : super(MapOverlayInitial()) {
     logger.d("initalized group ${selectedGroup?.name}");
   }
@@ -67,13 +69,16 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
             (userState.name.isNotEmpty) ? userState.name[0] : "");
         await Future.delayed(Duration(seconds: 1));
         //Now go through and put it on the map
-        Symbol userSymbol = await controller.addSymbol(SymbolOptions(
-          geometry: userState.coords.toLatLng(),
-          iconImage: "pin-drop-$memberID",
-          iconSize: 1.0,
-          iconAnchor: 'bottom',
-        ));
+        Symbol userSymbol = await controller.addSymbol(
+          SymbolOptions(
+            geometry: userState.coords.toLatLng(),
+            iconImage: "pin-drop-$memberID",
+            iconSize: 1.0,
+            iconAnchor: 'bottom',
+          ),
+        );
         _activeSymbols[memberID] = userSymbol;
+        symbolIDMap[userSymbol.id] = memberID;
       }
       // Then add listeners to keep them updated on locaiton updates
       final listener = locationService.userStateBox
@@ -99,6 +104,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
                 iconSize: 1.0,
                 iconAnchor: 'bottom'));
             _activeSymbols[memberID] = userSymbol;
+            symbolIDMap[userSymbol.id] = memberID;
             // If it's not null, update it's location
           } else {
             controller.updateSymbol(_activeSymbols[memberID]!,
