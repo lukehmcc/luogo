@@ -22,7 +22,28 @@ Color getRandomLightColor() {
   return Color.fromRGBO(channels[0], channels[1], channels[2], 1.0);
 }
 
-// Cubit for state management
+/// A Cubit class for managing the state of a profile creation page.
+///
+/// This class handles:
+/// - Managing the user's selected profile name through [nameController]
+/// - Managing the user's selected profile color through [selectedColor] and [pickerColor]
+/// - Generating a random light color for the initial profile color
+/// - Validating and saving the profile data to SharedPreferences
+///
+/// The cubit emits different states based on user interactions:
+/// - [CreateProfileInitial]: Initial state when the cubit is created
+/// - [CreateProfileTextEdited]: When the user edits the name text field
+/// - [CreateProfileColorChanged]: When the user selects a new color
+/// - [CreateProfileSuccess]: When the profile is successfully saved
+/// - [CreateProfileError]: When there's an error during profile saving
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => CreateProfilePageCubit(prefs: prefs),
+///   child: CreateProfilePage(),
+/// )
+/// ```
 class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
   final SharedPreferencesWithCache prefs;
 
