@@ -32,7 +32,7 @@
 
 ## Getting Started
 
-**In Beta Period**: For now the best way to try the app is to go to the [Releases]([Releases · lukehmcc/luogo · GitHub](https://github.com/lukehmcc/luogo/releases)) page and download the Android APK file. This will be updated when the app gets pushed to the App/Play Stores. 
+**In Beta Period**: For now the best way to try the app is to go to the [Releases]([Releases · lukehmcc/luogo · GitHub](https://github.com/lukehmcc/luogo/releases)) page and download the Android APK file. This will be updated when the app gets pushed to the App/Play Stores.
 
 ### Development
 
@@ -60,6 +60,6 @@ Let's break this down into a couple parts:
 
 Luogo is an Italian word for Place. Just thought it sounded nice (and no one had an app called that yet :p)
 
-## ## Acknowledgement
+## Acknowledgement
 
 This work is supported by a [Sia Foundation](https://sia.tech/) grant.
