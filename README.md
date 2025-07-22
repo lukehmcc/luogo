@@ -50,11 +50,9 @@ Feel free to [submit an issue](https://github.com/lukehmcc/luogo/issues) or [PR]
 
 ## Architecture
 
-Let's break this down into a couple parts:
-
 **Backend:** Utilizes the [s5_messenger](https://github.com/s5-dev/s5_messenger) library to handle messaging between users. The users location is grabed from the [geolocator](https://pub.dev/packages/geolocator), parsed into a [message format](https://github.com/s5-dev/s5_messenger/blob/main/lib/src/mls5/model/message.dart), then s5_messenger uses [openmls](https://crates.io/crates/openmls) to create the message in the respecitve group, and this message is relayed through the s5 network via a [streams message](https://docs.s5.pro/spec/streams.html). This is then done in reverse by the other clients in the room.
 
-**Front End:** Utilizes [Flutter](https://flutter.dev/) to handle cross-platform compling with a single codebase. [Cubits](https://bloclibrary.dev/bloc-concepts/#creating-a-cubit) are used to handle state and seperate out buisness logic from the UI. The UI code can be found in `lib/cubit` and the UI code is in in `lib/view`.  
+**Front End:** Utilizes [Flutter](https://flutter.dev/) to handle cross-platform compling with a single codebase. [Cubits](https://bloclibrary.dev/bloc-concepts/#creating-a-cubit) are used to handle state and seperate out buisness logic from the UI. The state code can be found in `lib/cubit` and the UI code is in in `lib/view`.  
 
 ## Etimology
 
