@@ -5,6 +5,16 @@ import 'package:luogo/services/location_service.dart';
 const String backgroundLocationTask = "backgroundLocationTask";
 final Logger logger = Logger();
 
+/// The callback dispatcher for background tasks using Workmanager.
+///
+/// Example:
+/// ```dart
+/// Workmanager().initialize(callbackDispatcher);
+/// Workmanager().registerOneOffTask(
+///   "1",
+///   backgroundLocationTask,
+/// );
+/// ```
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {

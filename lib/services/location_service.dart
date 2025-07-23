@@ -19,11 +19,6 @@ import 'package:path/path.dart' as path;
 
 /// A service for periodically fetching and storing the device's current location.
 ///
-/// This service handles:
-/// - **Permission management**: Checks and requests location permissions
-/// - **Periodic updates**: Fetches location at configurable intervals
-/// - **Persistence**: Stores locations using Hive for offline access
-///
 /// ## Usage
 /// ```dart
 /// final locationService = LocationService();

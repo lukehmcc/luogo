@@ -5,6 +5,17 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:msgpack_dart/msgpack_dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// A class representing an embeddable message with geographic coordinates and styling.
+///
+/// Example:
+/// ```dart
+/// final embed = MessageEmbed(
+///   coordinates: LatLng(37.7749, -122.4194),
+///   name: 'San Francisco',
+///   color: Colors.blue,
+/// );
+/// final binaryData = embed.toMsgpack();
+/// ```
 class MessageEmbed {
   final LatLng coordinates;
   final String name;

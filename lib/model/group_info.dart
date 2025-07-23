@@ -1,4 +1,9 @@
-/// Class to handle MLS groups
+/// A model class for representing group information.
+///
+/// Example usage:
+/// ```dart
+/// final group = GroupInfo(id: "xxx", name: "xxx");
+/// ```
 class GroupInfo {
   final String id;
   final String name;
@@ -23,6 +28,16 @@ class GroupInfo {
   }
 }
 
+/// A utility class for managing a list of GroupInfo objects.
+///
+///
+/// Example usage:
+/// ```dart
+/// final groups = GroupInfoList(groups: [GroupInfo(id: "xxx", name: "xxx")]);
+/// final group = groups.findByID("xxx");  // Returns the GroupInfo if found
+/// final firstGroup = groups[0];  // Accesses the first group
+/// final count = groups.length;  // Gets the number of groups
+/// ```
 class GroupInfoList {
   List<GroupInfo> groups;
   GroupInfoList({required this.groups});

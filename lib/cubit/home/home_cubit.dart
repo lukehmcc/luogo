@@ -3,6 +3,16 @@ import 'package:luogo/cubit/home/home_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 
+/// A Cubit class for managing the home state.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) =&gt; HomeCubit(),
+///   child: YourHomeWidget(),
+/// )
+/// ```
+
 class HomeCubit extends Cubit<HomeState> {
   GroupInfo? group;
   HomeCubit() : super(HomeInitial());

@@ -13,24 +13,20 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A Cubit that manages the state and logic for the group sheet UI component.
+/// A Cubit class for managing the group sheet UI state.
 ///
-/// This cubit handles:
-/// - Managing the share location toggle state
-/// - Showing the invite user dialog
-/// - Converting member signatures to user states
-/// - Sending one-time location updates
-///
-/// Dependencies:
-/// - [s5messenger]: The S5 messaging service
-/// - [groupInfo]: Information about the current group
-/// - [prefs]: Shared preferences with caching
-/// - [locationService]: Service for handling location-related functionality
-///
-/// Initial state: [GroupSheetInitial]
-/// Possible states:
-/// - [GroupSheetInviteDialogPressed]
-/// - [GroupSheetShareLocationUpdated]
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => GroupSheetCubit(
+///     s5messenger: yourS5MessengerInstance,
+///     groupInfo: yourGroupInfoInstance,
+///     prefs: yourSharedPreferencesInstance,
+///     locationService: yourLocationServiceInstance,
+///   ),
+///   child: YourGroupSheetWidget(),
+/// )
+/// ```
 class GroupSheetCubit extends Cubit<GroupSheetState> {
   S5Messenger s5messenger;
   GroupInfo groupInfo;

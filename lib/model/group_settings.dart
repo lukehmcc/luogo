@@ -3,7 +3,26 @@ import 'dart:convert';
 import 'package:luogo/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Defines group settings which are saved to prefs
+/// A class for managing group-specific settings that are persisted in SharedPreferences.
+///
+/// This class handles the serialization and deserialization of group settings,
+/// including location sharing preferences.
+///
+/// Example usage:
+/// ```dart
+/// // Load settings for a group
+/// final settings = GroupSettings.load(group, prefs);
+///
+/// // Update and save settings
+/// settings.shareLocation = false;
+/// await GroupSettings.save(prefs, settings);
+///
+/// // Create new settings
+/// final newSettings = GroupSettings(
+///   groupId: groupId;,
+///   shareLocation: true,
+/// );
+/// ```
 class GroupSettings {
   final String groupId;
   bool shareLocation;

@@ -8,6 +8,18 @@ import 'package:luogo/services/location_service.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:uuid/uuid.dart';
 
+/// A Cubit class for managing the keypair QR state.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) =&gt; KeypairQRCubit(
+///     s5messenger: yourS5MessengerInstance,
+///     locationService: yourLocationServiceInstance,
+///   ),
+///   child: YourKeypairQRWidget(),
+/// )
+/// ```
 class KeypairQRCubit extends Cubit<KeypairQRState> {
   final S5Messenger s5messenger;
   final LocationService locationService;

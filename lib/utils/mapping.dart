@@ -2,7 +2,23 @@ import 'package:flutter/services.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:image/image.dart' as img;
 
-/// Adds an asset image to the currently displayed style
+/// Adds an image from an asset to the current map style with a colored circle and letter overlay.
+///
+/// This function:
+/// - Loads an image from the specified asset
+/// - Draws a colored circle at a fixed position on the image
+/// - Adds a letter overlay in the center
+/// - Adds the final composited image to the map style
+///
+/// Parameters:
+/// - `controller`: The [MapLibreMapController] instance used to add the image to the map
+/// - `name`: The unique identifier for this image in the map style
+/// - `assetName`: The path to the asset image (e.g., 'assets/images/marker.png')
+/// - `color`: The [Color] of the circle to be drawn
+/// - `letter`: The single character to be drawn on top of the circle
+///
+/// Returns:
+/// A [Future] that completes when the image has been added to the map style
 Future<void> addImageFromAsset(MapLibreMapController controller, String name,
     String assetName, Color color, String letter) async {
   final Uint8List bytes =
@@ -11,6 +27,22 @@ Future<void> addImageFromAsset(MapLibreMapController controller, String name,
   return controller.addImage(name, list);
 }
 
+/// Creates a composite image by adding a colored circle and letter to an asset image.
+///
+/// This helper function:
+/// 1. Loads and decodes the original image from assets
+/// 2. Draws a colored circle at fixed coordinates
+/// 3. Creates a separate image with the provided letter
+/// 4. Composites both images together
+/// 5. Encodes the result as PNG
+///
+/// Parameters:
+/// - `assetName`: The path to the asset image (e.g., 'assets/images/marker.png')
+/// - `color`: The [Color] of the circle to be drawn
+/// - `letter`: The single character to be drawn on top of the circle
+///
+/// Returns:
+/// A [Future<Uint8List>] containing the PNG-encoded bytes of the composited image
 Future<Uint8List> addColoredCircleAndLetterToImage(
     String assetName, Color color, String letter) async {
   // 1. Load and decode the original image

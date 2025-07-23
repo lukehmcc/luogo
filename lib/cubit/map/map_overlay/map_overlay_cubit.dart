@@ -13,6 +13,25 @@ import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
+/// A Cubit class for managing the map overlay state.
+///
+/// This cubit handles QR code generation for keypackages, group selection
+/// to update and display user pins on the map, and real-time listening to
+/// location updates for dynamic symbol management.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => MapOverlayCubit(
+///     selectedGroup: yourSelectedGroupInstance,
+///     s5messenger: yourS5MessengerInstance,
+///     locationService: yourLocationServiceInstance,
+///     mapController: yourMapControllerCompleter,
+///     symbolIDMap: yourSymbolIDMap,
+///   ),
+///   child: YourMapOverlayWidget(),
+/// )
+/// ```
 class MapOverlayCubit extends Cubit<MapOverlayState> {
   GroupInfo? selectedGroup;
   S5Messenger s5messenger;

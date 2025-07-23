@@ -1,6 +1,6 @@
 # Luogo
 
-*A Simple & Secure Group Location Sharing Appp*  
+*A Simple & Secure Group Location Sharing App*  
 
 <p align="center">
   <a href="https://opensource.org/license/eupl-1-2"><img src="https://shields.io/pypi/l/perconet"></a>

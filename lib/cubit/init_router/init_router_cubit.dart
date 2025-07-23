@@ -2,7 +2,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Simple logic that checks if user has been initialized
+/// A Cubit class for managing the initialization router state, checking if the user has been initialized via shared preferences.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => InitRouterCubit(prefs: yourSharedPreferencesInstance),
+///   child: YourInitRouterWidget(),
+/// )
+/// ```
 class InitRouterCubit extends Cubit<InitRouterState> {
   final SharedPreferencesWithCache prefs;
 

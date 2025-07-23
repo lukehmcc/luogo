@@ -13,6 +13,18 @@ import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
+/// A Cubit class for managing the main application state.
+///
+/// It initializes dependencies like S5, S5Messenger, shared
+/// preferences, and location services.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => MainCubit(),
+///   child: YourMainWidget(),
+/// )
+/// ```
 class MainCubit extends Cubit<MainState> {
   MainCubit() : super(MainStateInitial());
 

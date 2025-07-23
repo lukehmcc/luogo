@@ -7,6 +7,7 @@ import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
+/// A Drawer widget that displays and manages a list of chat groups.
 class GroupsDrawer extends StatelessWidget {
   final S5Messenger s5messenger;
   const GroupsDrawer({super.key, required this.s5messenger});

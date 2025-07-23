@@ -1,7 +1,17 @@
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/model/hive_latlng.dart';
 
-/// This object defines the local state for each user which is stored in hive on update
+/// Represents a user's local state with coordinates, timestamp, name, and color.
+///
+/// Example:
+/// ```dart
+/// final userState = UserState(
+///   coords: HiveLatLng(lat: 37.7749, lng: -122.4194),
+///   ts: DateTime.now().millisecondsSinceEpoch,
+///   name: "John Doe",
+///   color: 0xFF0000,
+/// );
+/// ```
 class UserState extends HiveObject {
   final HiveLatLng coords;
   final int ts; // Timestamp when last updated

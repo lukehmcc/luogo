@@ -4,6 +4,15 @@ import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
+/// A Cubit class for managing the state of the groups drawer.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => GroupsDrawerCubit(),
+///   child: YourGroupsDrawerWidget(),
+/// )
+/// ```
 class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   S5Messenger? s5messenger; // mutable so can load async
 

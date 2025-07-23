@@ -8,7 +8,20 @@ import 'package:luogo/cubit/map/invite_user_qr/invite_user_qr_state.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
-/// Defines the state for the group sheet
+/// A Cubit class for managing the invite user QR state.
+///
+/// This cubit handles QR code processing for user invitations.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => InviteUserQrCubit(
+///     s5messenger: yourS5MessengerInstance,
+///     groupInfo: yourGroupInfoInstance,
+///   ),
+///   child: YourInviteUserQrWidget(),
+/// )
+/// ```
 class InviteUserQrCubit extends Cubit<InviteUserQrState> {
   S5Messenger s5messenger;
   GroupInfo groupInfo;

@@ -11,8 +11,22 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:luogo/cubit/map/map_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Manages map state and interactions, including user location tracking and symbol handling.
-/// Integrates with MapLibre for map rendering and Hive for location updates.
+/// A Cubit class for managing the map state.
+///
+/// This cubit handles user location tracking, symbol management, and map
+/// interactions such as updating camera positions and responding to symbol
+/// taps for real-time updates.
+///
+/// Example usage:
+/// ```dart
+/// BlocProvider(
+///   create: (context) => MapCubit(
+///     locationService: yourLocationServiceInstance,
+///     prefs: yourSharedPreferencesInstance,
+///   ),
+///   child: YourMapWidget(),
+/// )
+/// ```
 class MapCubit extends Cubit<MapState> {
   final LocationService locationService;
   final SharedPreferencesWithCache prefs;
