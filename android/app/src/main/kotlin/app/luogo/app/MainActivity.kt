@@ -1,4 +1,4 @@
-package com.example.s5_messenger_example
+package app.luogo.app
 
 import io.flutter.embedding.android.FlutterActivity
 

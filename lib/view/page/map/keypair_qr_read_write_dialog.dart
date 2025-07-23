@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
 import 'package:luogo/main.dart';
@@ -9,7 +10,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 class KeypairQrReadWriteDialog extends StatelessWidget {
   final String keypair;
-  const KeypairQrReadWriteDialog({super.key, required this.keypair});
+  final HomeCubit homeCubit;
+  const KeypairQrReadWriteDialog({
+    super.key,
+    required this.keypair,
+    required this.homeCubit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +23,16 @@ class KeypairQrReadWriteDialog extends StatelessWidget {
       // Us a listener here so widget state isn't handled form bloc thread
       listener: (BuildContext context, KeypairQRState keypairQRState) {
         // Pop once a gorup has been joined
-        if (keypairQRState is KeypairQRScannedWelcomeMessage) {
+        if (keypairQRState is KeyPairQrGroupLoaded) {
+          if (keypairQRState.group != null) {
+            homeCubit.groupSelected(keypairQRState.group!);
+          }
           Navigator.pop(context);
+          logger.d("got group loaded");
+        }
+        if (keypairQRState is KeyPairQrGroupError) {
+          Navigator.pop(context);
+          logger.d("got group error");
         }
       },
       child: AlertDialog(
@@ -38,7 +52,6 @@ class KeypairQrReadWriteDialog extends StatelessWidget {
             ],
           ),
         ),
-        // TODO put a user's logo and color inside the QR code
         content: BlocBuilder<KeypairQRCubit, KeypairQRState>(
           builder: (BuildContext context, KeypairQRState keypairQRState) {
             final KeypairQRCubit kpCubit =

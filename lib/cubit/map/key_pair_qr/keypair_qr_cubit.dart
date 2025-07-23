@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
+import 'package:luogo/main.dart';
+import 'package:luogo/model/group_info.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 import 'package:uuid/uuid.dart';
@@ -56,10 +58,20 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
     s5messenger.messengerState.groupId = groupId;
     s5messenger.messengerState.update();
 
-    //add group listener to locationservice to get updates
-    locationService.setupListenToPeer(s5messenger.group(groupId));
+    // Now make sure to set the group and update UI
+    try {
+      s5messenger.messengerState.groupId = groupId;
+      s5messenger.messengerState.update();
+      final GroupInfoList groups =
+          GroupInfo.fromJsonList(s5messenger.groupsBox.values.toList());
+      final GroupInfo? group = groups.findByID(groupId);
+      emit(KeyPairQrGroupLoaded(groups, group)); // Use same state
+    } catch (e) {
+      logger.e(e);
+      emit(KeyPairQrGroupError(e.toString()));
+    }
 
-    // Pop the dialog once it's done
-    emit(KeypairQRScannedWelcomeMessage());
+    // add group listener to locationservice to get updates
+    locationService.setupListenToPeer(s5messenger.group(groupId));
   }
 }

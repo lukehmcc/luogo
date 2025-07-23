@@ -61,6 +61,7 @@ class _MapOverlayContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // If groupInfo present, do the overlay for group
+    final HomeCubit homeCubit = context.read<HomeCubit>();
     if (groupInfo != null) {
       return BlocListener<MapOverlayCubit, MapOverlayState>(
           listener: (BuildContext context, MapOverlayState mapOverlayState) {
@@ -74,7 +75,9 @@ class _MapOverlayContent extends StatelessWidget {
                           s5messenger: s5messenger,
                           locationService: locationService),
                       child: KeypairQrReadWriteDialog(
-                          keypair: mapOverlayState.keypair),
+                        keypair: mapOverlayState.keypair,
+                        homeCubit: homeCubit,
+                      ),
                     );
                   });
             }
@@ -156,7 +159,9 @@ class _MapOverlayContent extends StatelessWidget {
                         s5messenger: s5messenger,
                         locationService: locationService),
                     child: KeypairQrReadWriteDialog(
-                        keypair: mapOverlayState.keypair),
+                      keypair: mapOverlayState.keypair,
+                      homeCubit: homeCubit,
+                    ),
                   );
                 });
           }
