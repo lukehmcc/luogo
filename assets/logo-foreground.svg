@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:export>
+      <bx:file format="png"/>
+    </bx:export>
+  </defs>
+  <ellipse style="stroke-width: 30px; fill: rgb(103, 58, 183); stroke: rgb(255, 255, 255);" cx="250" cy="233.079" rx="150.972" ry="150.972"/>
+  <text style="fill: rgb(255, 255, 255); font-family: &quot;Adwaita Sans&quot;; font-size: 250px; font-weight: 700; stroke-width: 2px; white-space: pre;" x="179.321" y="326.44">L</text>
+  <path style="stroke-width: 0px; stroke: rgb(255, 255, 255); fill: rgb(255, 255, 255);" d="M 140.795 358.053 L 251.208 458.894 L 366.577 351.244 L 361.574 340.922 L 337.824 361.125 L 309.969 373.504 L 280.587 384.163 L 218.915 382.408 L 191.274 375.288 L 154.264 357.371 L 136.739 338.231 L 140.795 358.053 Z"/>
+</svg>
