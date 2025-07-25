@@ -18,6 +18,8 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
 
   GroupsDrawerCubit() : super(GroupsDrawerInitial());
 
+  String? currentGroupID;
+
   Future<void> setS5Messenger(S5Messenger s5messengerIn) async {
     s5messenger = s5messengerIn;
     emit(GroupsDrawerLoading());
@@ -50,7 +52,7 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   }
 
   Future<void> selectGroup(String groupId) async {
-    if (s5messenger == null) return;
+    if (s5messenger == null || currentGroupID == groupId) return;
     try {
       s5messenger!.messengerState.groupId = groupId;
       s5messenger!.messengerState.update();

@@ -18,11 +18,13 @@ class HomeCubit extends Cubit<HomeState> {
   HomeCubit() : super(HomeInitial());
 
   void groupSelected(GroupInfo groupSelected) {
-    group = groupSelected;
-    if (group != null) {
-      emit(HomeGroupSelected(group!));
-    } else {
-      logger.e("Group doesn't exist");
+    if (group != groupSelected) {
+      group = groupSelected;
+      if (group != null) {
+        emit(HomeGroupSelected(group!));
+      } else {
+        logger.e("Group doesn't exist");
+      }
     }
   }
 

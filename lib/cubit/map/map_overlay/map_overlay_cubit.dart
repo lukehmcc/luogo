@@ -82,11 +82,12 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
     // Nuke all the old listeners & symbols
     final controller = await mapController.future;
     for (final Symbol symbol in _activeSymbols.values) {
-      controller.removeSymbol(symbol);
+      logger.d("Removing symbol ${symbol.id}");
+      await controller.removeSymbol(symbol);
     }
     _activeSymbols.clear();
     for (final StreamSubscription<dynamic> sub in _activeListeners.values) {
-      sub.cancel();
+      await sub.cancel();
     }
     _activeListeners.clear();
 
@@ -115,6 +116,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
           ),
         );
         _activeSymbols[memberID] = userSymbol;
+        logger.d("Adding symbol ${userSymbol.id}");
         symbolIDMap[userSymbol.id] = memberID;
       }
       // Then add listeners to keep them updated on locaiton updates

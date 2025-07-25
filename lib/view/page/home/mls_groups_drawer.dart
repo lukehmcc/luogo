@@ -36,10 +36,6 @@ class GroupsDrawer extends StatelessWidget {
                         return Center(child: Text(state.message));
                       }
                       if (state is GroupsDrawerLoaded) {
-                        if (state.group != null) {
-                          final homeCubit = BlocProvider.of<HomeCubit>(context);
-                          homeCubit.groupSelected(state.group!);
-                        }
                         return GroupListView(
                           groups: state.groups,
                           s5messenger: s5messenger,
@@ -90,7 +86,10 @@ class GroupListView extends StatelessWidget {
               final group = groups[index];
               return ListTile(
                 onTap: () {
-                  context.read<GroupsDrawerCubit>().selectGroup(group.id);
+                  context
+                      .read<GroupsDrawerCubit>()
+                      .selectGroup(group.id); // Update backend
+                  context.read<HomeCubit>().groupSelected(group); // Update UI
                   Navigator.pop(context); // Close drawer
                 },
                 onLongPress: () async {
