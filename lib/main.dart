@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/view/page/init_router.dart';
-import 'package:workmanager/workmanager.dart';
-import 'package:luogo/services/background_service.dart';
 
 // This is my only global var, as no init process
 final Logger logger = Logger();
@@ -12,16 +10,6 @@ final Logger logger = Logger();
 /// Main fucntion that starts everything. Utilizes a Cubit to handle state
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: true,
-  );
-  // Register the periodic task
-  Workmanager().registerPeriodicTask(
-    "Background Location Share-er",
-    backgroundLocationTask,
-    frequency: Duration(minutes: 1),
-  );
   runApp(
     BlocProvider(
       create: (context) => MainCubit()..initializeApp(),

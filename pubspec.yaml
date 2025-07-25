@@ -44,7 +44,6 @@ dependencies:
   qr_flutter: ^4.1.0
   msgpack_dart: ^1.0.1
   uuid: ^4.5.1
-  workmanager: ^0.8.0
   intl: ^0.20.2
 
 dev_dependencies:
