@@ -16,40 +16,52 @@ class GroupsDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: SafeArea(
-          child: Stack(
-        children: [
-          BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
-            builder: (context, state) {
-              if (state is GroupsDrawerLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (state is GroupsDrawerError) {
-                return Center(child: Text(state.message));
-              }
-              if (state is GroupsDrawerLoaded) {
-                // if a group is selected, make sure to set the homestate
-                if (state.group != null) {
-                  final homeCubit = BlocProvider.of<HomeCubit>(context);
-                  homeCubit.groupSelected(state.group!);
-                }
-                return GroupListView(
-                  groups: state.groups,
-                  s5messenger: s5messenger,
-                );
-              }
-              return const SizedBox(); // Initial state
-            },
-          ),
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: FloatingActionButton(
-              onPressed: context.read<GroupsDrawerCubit>().createGroup,
-              child: const Icon(Icons.add),
+        child: Column(
+          children: [
+            const ListTile(
+              title: Text(
+                'Groups',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
             ),
-          )
-        ],
-      )),
+            Expanded(
+              child: Stack(
+                children: [
+                  BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
+                    builder: (context, state) {
+                      if (state is GroupsDrawerLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (state is GroupsDrawerError) {
+                        return Center(child: Text(state.message));
+                      }
+                      if (state is GroupsDrawerLoaded) {
+                        if (state.group != null) {
+                          final homeCubit = BlocProvider.of<HomeCubit>(context);
+                          homeCubit.groupSelected(state.group!);
+                        }
+                        return GroupListView(
+                          groups: state.groups,
+                          s5messenger: s5messenger,
+                        );
+                      }
+                      return const SizedBox(); // Initial state
+                    },
+                  ),
+                  Positioned(
+                    right: 20,
+                    bottom: 20,
+                    child: FloatingActionButton(
+                      onPressed: context.read<GroupsDrawerCubit>().createGroup,
+                      child: const Icon(Icons.add),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -67,6 +79,11 @@ class GroupListView extends StatelessWidget {
     return StreamBuilder<void>(
         stream: s5messenger.messengerState.stream,
         builder: (context, snapshot) {
+          if (groups.length == 0) {
+            return Center(
+              child: Text("Create a group with the + button!"),
+            );
+          }
           return ListView.builder(
             itemCount: groups.length,
             itemBuilder: (context, index) {

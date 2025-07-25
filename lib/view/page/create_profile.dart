@@ -57,8 +57,9 @@ class CreateProfilePage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child:
                   BlocBuilder<CreateProfilePageCubit, CreateProfilePageState>(
-                builder: (context, state) {
-                  final cubit = context.read<CreateProfilePageCubit>();
+                builder: (BuildContext context, CreateProfilePageState state) {
+                  final CreateProfilePageCubit cubit =
+                      context.read<CreateProfilePageCubit>();
                   return Center(
                       child: SingleChildScrollView(
                     child: Column(
@@ -115,27 +116,37 @@ class CreateProfilePage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(
-                                  Icons.colorize), // Eye dropper style icon
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text(
-                                          "Pick your profile color!"),
-                                      content: SingleChildScrollView(
-                                        child: BlockPicker(
-                                          pickerColor: cubit.pickerColor,
-                                          onColorChanged: cubit.onColorPicked,
+                            Container(
+                              decoration: BoxDecoration(
+                                color: cubit.selectedColor,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(
+                                  2), // Adjust padding as needed
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.colorize,
+                                  color: Colors
+                                      .white, // Ensure icon is visible against the background
+                                ),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text(
+                                            "Pick your profile color!"),
+                                        content: SingleChildScrollView(
+                                          child: BlockPicker(
+                                            pickerColor: cubit.pickerColor,
+                                            onColorChanged: cubit.onColorPicked,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              tooltip: 'Pick a color',
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),

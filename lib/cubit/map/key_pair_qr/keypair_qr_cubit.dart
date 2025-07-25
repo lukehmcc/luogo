@@ -15,7 +15,7 @@ import 'package:uuid/uuid.dart';
 /// Example usage:
 /// ```dart
 /// BlocProvider(
-///   create: (context) =&gt; KeypairQRCubit(
+///   create: (context) => KeypairQRCubit(
 ///     s5messenger: yourS5MessengerInstance,
 ///     locationService: yourLocationServiceInstance,
 ///   ),
@@ -55,8 +55,6 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
       myID,
       Uuid().v4(),
     );
-    s5messenger.messengerState.groupId = groupId;
-    s5messenger.messengerState.update();
 
     // Now make sure to set the group and update UI
     try {
@@ -71,7 +69,7 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
       emit(KeyPairQrGroupError(e.toString()));
     }
 
-    // add group listener to locationservice to get updates
+    // refresh the pins now that a new member is added
     locationService.setupListenToPeer(s5messenger.group(groupId));
   }
 }

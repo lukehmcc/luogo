@@ -59,6 +59,24 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
     emit(MapOverlayQRPopupPressed(keypair: message));
   }
 
+  // Function that repeatedly tries to populate pins until the length is correct
+  // used when creating new rooms
+  Future<void> ensureSufficientPinsPopulated(GroupInfo groupInfo) async {
+    bool cont = true;
+    while (cont) {
+      final int groupMembersCount =
+          s5messenger.group(groupInfo.id).members.length;
+      final int symbolCount =
+          _activeSymbols.length + 1; // + 1 because local user isn't counted
+      if (groupMembersCount != symbolCount) {
+        groupSelectedEngagePins(groupInfo);
+      } else {
+        cont = false;
+      }
+      await Future.delayed(Duration(seconds: 1));
+    }
+  }
+
   // When a group is selected, put their pins on the map
   void groupSelectedEngagePins(GroupInfo groupInfo) async {
     // Nuke all the old listeners & symbols

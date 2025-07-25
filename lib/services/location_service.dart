@@ -179,6 +179,7 @@ class LocationService {
     }
     // Set a listener for each group then start listening for updates of location
     for (final GroupState group in s5messenger!.groups.values) {
+      logger.d("Setting up listener for: ${group.groupId}");
       setupListenToPeer(group);
     }
   }

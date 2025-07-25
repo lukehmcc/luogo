@@ -62,24 +62,27 @@ class _MapOverlayContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // If groupInfo present, do the overlay for group
     final HomeCubit homeCubit = context.read<HomeCubit>();
+    final MapOverlayCubit mapOverlayCubit = context.read<MapOverlayCubit>();
     if (groupInfo != null) {
       return BlocListener<MapOverlayCubit, MapOverlayState>(
           listener: (BuildContext context, MapOverlayState mapOverlayState) {
             if (mapOverlayState is MapOverlayQRPopupPressed) {
               // Shows dialog for the QR button so user can scan
               showDialog<dynamic>(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return BlocProvider<KeypairQRCubit>(
-                      create: (BuildContext context) => KeypairQRCubit(
-                          s5messenger: s5messenger,
-                          locationService: locationService),
-                      child: KeypairQrReadWriteDialog(
-                        keypair: mapOverlayState.keypair,
-                        homeCubit: homeCubit,
-                      ),
-                    );
-                  });
+                context: context,
+                builder: (BuildContext context) {
+                  return BlocProvider<KeypairQRCubit>(
+                    create: (BuildContext context) => KeypairQRCubit(
+                        s5messenger: s5messenger,
+                        locationService: locationService),
+                    child: KeypairQrReadWriteDialog(
+                      keypair: mapOverlayState.keypair,
+                      homeCubit: homeCubit,
+                      mapOverlayCubit: mapOverlayCubit,
+                    ),
+                  );
+                },
+              );
             }
             if (mapOverlayState is MapOverlayGroupPopupPressed) {
               // Shows dialog for group so user can see group info
@@ -100,7 +103,11 @@ class _MapOverlayContent extends StatelessWidget {
                     ),
                   );
                 },
-              );
+              ).then((_) {
+                // Since there is no reliable notifier when the user has joined the group,
+                // put on a listener to check for when they send their first message
+                mapOverlayCubit.ensureSufficientPinsPopulated(groupInfo!);
+              });
             }
           },
           child: SafeArea(
@@ -161,6 +168,7 @@ class _MapOverlayContent extends StatelessWidget {
                     child: KeypairQrReadWriteDialog(
                       keypair: mapOverlayState.keypair,
                       homeCubit: homeCubit,
+                      mapOverlayCubit: mapOverlayCubit,
                     ),
                   );
                 });

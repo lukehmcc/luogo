@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_cubit.dart';
@@ -11,30 +9,7 @@ import 'package:luogo/view/page/map/invite_user_qr_dialog.dart';
 import 'package:luogo/view/widgets/circle_avatar_styled_named.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
-/// A stateless widget that displays a group information sheet with member list and controls.
-///
-/// This widget provides:
-/// - Group name display
-/// - Member list with avatars
-/// - Location sharing toggle
-/// - One-time location send button
-/// - User invitation functionality
-///
-/// Dependencies:
-/// - [groupInfo]: Contains group metadata (name, ID, etc.)
-/// - [s5messenger]: Handles group messaging and member management
-///
-/// Behavior:
-/// - Listens to [GroupSheetCubit] state changes
-/// - Shows [InviteUserQrDialog] when invite button is pressed
-/// - Displays real-time member list updates via [StreamBuilder]
-/// - Maintains UI consistency with the current [GroupSheetState]
-///
-/// Layout Structure:
-/// 1. Group name header
-/// 2. Action buttons row (Invite User, Send Location)
-/// 3. Location sharing toggle
-/// 4. Members list section
+/// Displays a group information sheet with member list and controls.
 class GroupSheet extends StatelessWidget {
   final GroupInfo groupInfo;
   final S5Messenger s5messenger;
@@ -107,22 +82,30 @@ class GroupSheet extends StatelessWidget {
                 stream:
                     s5messenger.group(groupInfo.id).membersStateNotifier.stream,
                 builder: (context, snapshot) {
+                  if (s5messenger.group(groupInfo.id).members.isEmpty) {
+                    return Center(
+                      child: Text("No that isn't right..."),
+                    );
+                  }
                   return ListView(
                     children: s5messenger
                         .group(groupInfo.id)
                         .members
-                        .map<ListTile>((GroupMember member) {
+                        .map<Widget>((GroupMember member) {
                       // define this first because will be used multiple times
                       final UserState? userState =
                           BlocProvider.of<GroupSheetCubit>(context)
                               .userStateFromSigkey(member.signatureKey);
+                      if (userState == null) {
+                        return Container();
+                      }
                       return ListTile(
                         leading: CircleAvatarStyledNamed(
-                          name: userState?.name ?? "",
-                          color: Color(userState?.color ?? 0),
+                          name: userState.name,
+                          color: Color(userState.color),
                         ),
                         title: Text(
-                          userState?.name ?? utf8.decode(member.identity),
+                          userState.name,
                         ),
                       );
                     }).toList(),

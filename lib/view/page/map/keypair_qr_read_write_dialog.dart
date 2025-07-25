@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_cubit.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
+import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
 import 'package:luogo/main.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -11,10 +12,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 class KeypairQrReadWriteDialog extends StatelessWidget {
   final String keypair;
   final HomeCubit homeCubit;
+  final MapOverlayCubit mapOverlayCubit;
   const KeypairQrReadWriteDialog({
     super.key,
     required this.keypair,
     required this.homeCubit,
+    required this.mapOverlayCubit,
   });
 
   @override
@@ -26,13 +29,15 @@ class KeypairQrReadWriteDialog extends StatelessWidget {
         if (keypairQRState is KeyPairQrGroupLoaded) {
           if (keypairQRState.group != null) {
             homeCubit.groupSelected(keypairQRState.group!);
+            mapOverlayCubit
+                .ensureSufficientPinsPopulated(keypairQRState.group!);
           }
+          logger.d("Group loaded and popping context back to overlay");
           Navigator.pop(context);
-          logger.d("got group loaded");
         }
         if (keypairQRState is KeyPairQrGroupError) {
           Navigator.pop(context);
-          logger.d("got group error");
+          logger.d("Group error and popping context back to overlay");
         }
       },
       child: AlertDialog(
