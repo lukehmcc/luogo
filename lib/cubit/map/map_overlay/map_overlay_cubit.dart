@@ -69,7 +69,23 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
       final int symbolCount =
           _activeSymbols.length + 1; // + 1 because local user isn't counted
       if (groupMembersCount != symbolCount) {
-        groupSelectedEngagePins(groupInfo);
+        // If they mismatch, check to make sure all users have an entry,
+        // it's not worth doing if they don't
+        final GroupState groupState = s5messenger.group(groupInfo.id);
+        bool areAnyMembersNotPopulatedYet = false;
+        for (final GroupMember member in groupState.members) {
+          final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
+
+          // First gotta add the initial symbols
+          final UserState? userState =
+              locationService.userStateBox.get(memberID);
+          if (userState == null) {
+            areAnyMembersNotPopulatedYet = true;
+          }
+        }
+        if (!areAnyMembersNotPopulatedYet) {
+          groupSelectedEngagePins(groupInfo);
+        }
       } else {
         cont = false;
       }
