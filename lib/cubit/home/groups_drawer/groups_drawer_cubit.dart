@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
 /// A Cubit class for managing the state of the groups drawer.
@@ -15,8 +16,11 @@ import 'package:s5_messenger/s5_messenger.dart';
 /// ```
 class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   S5Messenger? s5messenger; // mutable so can load async
+  LocationService locationService;
 
-  GroupsDrawerCubit() : super(GroupsDrawerInitial());
+  GroupsDrawerCubit({
+    required this.locationService,
+  }) : super(GroupsDrawerInitial());
 
   String? currentGroupID;
 
@@ -44,8 +48,10 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   Future<void> createGroup() async {
     if (s5messenger == null) return;
     try {
-      await s5messenger!.createNewGroup();
+      GroupState newGroup = await s5messenger!.createNewGroup();
       loadGroups(); // Refresh the list
+      // Then add listener
+      locationService.setupListenToPeer(newGroup);
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
     }

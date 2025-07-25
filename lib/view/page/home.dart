@@ -30,7 +30,9 @@ class HomePage extends StatelessWidget {
         // Gotta provide both the drawer and home page overlay so they could be listened
         providers: [
           BlocProvider<GroupsDrawerCubit>(
-            create: (BuildContext context) => GroupsDrawerCubit(),
+            create: (BuildContext context) => GroupsDrawerCubit(
+              locationService: locationService,
+            ),
           ),
           BlocProvider<HomeCubit>(
             create: (BuildContext context) => HomeCubit(),
