@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/user_state.dart';
@@ -82,16 +81,9 @@ class MapCubit extends Cubit<MapState> {
     });
   }
 
-  @override
-  Future<void> close() {
-    _positionWatcher.cancel();
-    return super.close();
-  }
-
   // Vars
   Completer<MapLibreMapController> mapController = Completer();
   LatLng? _userPosition; // Store position for later use
-  late StreamSubscription<BoxEvent> _positionWatcher;
   Symbol? _userSymbol; // Store local user symbol to be moved
   UserState? _localUserState;
   Map<String, String> symbolIDMap =
