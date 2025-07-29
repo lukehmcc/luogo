@@ -133,10 +133,12 @@ class LocationService {
   // returns true if position granted
   Future<bool> _checkLocationPermission() async {
     // Check current permission status
+    logger.d("Checking location permissions");
     LocationPermission permission = await Geolocator.checkPermission();
 
     // If permission is denied and we haven't asked before, request it
     if (permission == LocationPermission.denied) {
+      logger.d("Requesting Location Permissions");
       permission = await Geolocator.requestPermission();
     }
 
