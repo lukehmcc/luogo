@@ -1015,7 +1015,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "6cb193577cbecd99737859d01938e61b68cc6e60"
+      resolved-ref: b562ef2d21119e4149e0979db9bdb9c0b9bad4ce
       url: "https://github.com/s5-dev/s5_messenger.git"
     source: git
     version: "0.1.2"
