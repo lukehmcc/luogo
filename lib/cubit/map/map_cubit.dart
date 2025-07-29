@@ -58,6 +58,7 @@ class MapCubit extends Cubit<MapState> {
       // Then update the user position
       if (event.value != null) {
         _userPosition = event.value.toLatLng();
+        logger.d("${_userPosition?.latitude}, ${_userPosition?.longitude}");
       }
 
       // If it's the first go, add the user symbol (it should always be there)

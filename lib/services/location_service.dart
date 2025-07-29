@@ -48,7 +48,10 @@ class LocationService {
     locationBox = await Hive.openBox<HiveLatLng>('location');
     userStateBox = await Hive.openBox<UserState>('userState');
     bool hasPermission = await _checkLocationPermission();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      logger.e("Location Permissions are not allowed!");
+      return;
+    }
 
     // Fetch immediately
     _fetchLocation();
@@ -120,6 +123,7 @@ class LocationService {
       final Position position = await Geolocator.getCurrentPosition();
       final LatLng latLng = LatLng(position.latitude, position.longitude);
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
+      logger.d("Local Position: ${latLng.longitude}, ${latLng.latitude}");
     } catch (e) {
       logger.e('Error fetching location: $e');
     }
@@ -128,22 +132,12 @@ class LocationService {
   // Checks & ensures permissions are granted
   // returns true if position granted
   Future<bool> _checkLocationPermission() async {
-    final bool hasAskedBefore =
-        prefs.getBool('hasAskedLocationPermission') ?? false;
-
     // Check current permission status
     LocationPermission permission = await Geolocator.checkPermission();
 
-    // If permission was denied before, don't ask again
-    if (hasAskedBefore && permission == LocationPermission.denied) {
-      return false;
-    }
-
     // If permission is denied and we haven't asked before, request it
-    if (permission == LocationPermission.denied && !hasAskedBefore) {
+    if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      // Mark that we've asked, regardless of the user's choice
-      await prefs.setBool('hasAskedLocationPermission', true);
     }
 
     // Now that location has been allowed (hopefully), we fetch location to
