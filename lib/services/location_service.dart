@@ -53,9 +53,6 @@ class LocationService {
       return;
     }
 
-    // Fetch immediately
-    _fetchLocation();
-
     // To not flood the channel with messages, just ping every minuet
     LatLng? lastSentPosition;
     _timer = Timer.periodic(Duration(minutes: 1), (timer) async {
