@@ -28,6 +28,7 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
     <string>Main</string>
+
   <!-- My things here -->
   <key>NSCameraUsageDescription</key>
   <string>Camera permission is required for barcode scanning.</string>
@@ -37,14 +38,12 @@
   <array>
     <string>processing</string>
     <string>fetch</string>
+    <string>location</string>
   </array>
-  <key>BGTaskSchedulerPermittedIdentifiers</key>
-  <array>
-    <string>task-identifier</string>
-    <string>app.luogo.app.iOSBackgroundAppRefresh</string>
-  </array>
-  <key>NSLocationAlwaysUsageDescription</key>
-  <string>This is a location sharing app, it neeeds your location.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Since this is a location sharing app, needed to access location always when the app is open.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Since this is a location sharing app, needs to access location when the app is open and run in background.</string>
 
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
