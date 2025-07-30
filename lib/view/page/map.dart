@@ -64,31 +64,35 @@ class MapView extends StatelessWidget {
         // This section reacts to state to draw the main page
         child: BlocBuilder<MapCubit, MapState>(
           builder: (context, state) {
-            return Stack(
-              children: [
-                MapLibreMap(
-                  onMapCreated: (controller) =>
-                      context.read<MapCubit>().mapCreated(controller),
-                  initialCameraPosition: const CameraPosition(
-                    target: LatLng(1, 1),
-                    zoom: 10.0,
+            return SafeArea(
+              top: false,
+              child: Stack(
+                children: [
+                  MapLibreMap(
+                    onMapCreated: (controller) =>
+                        context.read<MapCubit>().mapCreated(controller),
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(1, 1),
+                      zoom: 10.0,
+                    ),
+                    trackCameraPosition: true,
+                    styleString: "assets/pmtiles_style.json",
                   ),
-                  trackCameraPosition: true,
-                  styleString: "assets/pmtiles_style.json",
-                ),
-                if (state is! MapInitial)
-                  Positioned(
-                    bottom: 20,
-                    right: 20,
-                    child: Center(
-                      child: FloatingActionButton(
-                        onPressed: () => context.read<MapCubit>().moveToUser(),
-                        mini: true,
-                        child: const Icon(Icons.restore),
+                  if (state is! MapInitial)
+                    Positioned(
+                      bottom: 20,
+                      right: 20,
+                      child: Center(
+                        child: FloatingActionButton(
+                          onPressed: () =>
+                              context.read<MapCubit>().moveToUser(),
+                          mini: true,
+                          child: const Icon(Icons.restore),
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             );
           },
         ),

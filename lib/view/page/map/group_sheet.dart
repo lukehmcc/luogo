@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_cubit.dart';
 import 'package:luogo/cubit/map/group_sheet/group_sheet_state.dart';
 import 'package:luogo/cubit/map/invite_user_qr/invite_user_qr_cubit.dart';
+import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/model/user_state.dart';
 import 'package:luogo/view/page/map/invite_user_qr_dialog.dart';
@@ -22,6 +23,7 @@ class GroupSheet extends StatelessWidget {
     return BlocListener<GroupSheetCubit, GroupSheetState>(
       listener: (BuildContext context, GroupSheetState groupSheetState) {
         if (groupSheetState is GroupSheetInviteDialogPressed) {
+          GroupSheetCubit groupSheetCubit = context.read<GroupSheetCubit>();
           showDialog<dynamic>(
               context: context,
               builder: (BuildContext context) {
@@ -30,7 +32,10 @@ class GroupSheet extends StatelessWidget {
                       s5messenger: s5messenger, groupInfo: groupInfo),
                   child: InviteUserQrDialog(),
                 );
-              });
+              }).then((_) {
+            logger.d("ensuring all members loaded");
+            groupSheetCubit.ensureAllMembersLoaded();
+          });
         }
         if (groupSheetState is GroupSheetShareLocationOneShot) {
           ScaffoldMessenger.of(context).showSnackBar(

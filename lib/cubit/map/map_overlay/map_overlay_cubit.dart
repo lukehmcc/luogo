@@ -62,8 +62,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   // Function that repeatedly tries to populate pins until the length is correct
   // used when creating new rooms
   Future<void> ensureSufficientPinsPopulated(GroupInfo groupInfo) async {
-    bool cont = true;
-    while (cont) {
+    while (true) {
       final int groupMembersCount =
           s5messenger.group(groupInfo.id).members.length;
       final int symbolCount =
@@ -72,22 +71,35 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
         // If they mismatch, check to make sure all users have an entry,
         // it's not worth doing if they don't
         final GroupState groupState = s5messenger.group(groupInfo.id);
-        bool areAnyMembersNotPopulatedYet = false;
+
+        // Make sure the groupMembersCount isn't empty
+        if (groupMembersCount == 0) {
+          logger.d("Group is empty, waiting for members...");
+          await Future.delayed(Duration(seconds: 1));
+          continue;
+        }
+        bool allMembersPopulated = true;
+
         for (final GroupMember member in groupState.members) {
           final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
+          if (memberID == locationService.myID) {
+            continue; // skip if self, no need to waste a loop
+          }
 
           // First gotta add the initial symbols
           final UserState? userState =
               locationService.userStateBox.get(memberID);
           if (userState == null) {
-            areAnyMembersNotPopulatedYet = true;
+            allMembersPopulated = false;
+            break; // if one is null, no need to check the rest this iteration
           }
         }
-        if (!areAnyMembersNotPopulatedYet) {
+        if (allMembersPopulated) {
           groupSelectedEngagePins(groupInfo);
+          return; // exit loop once engaged
         }
       } else {
-        cont = false;
+        return; // exit loop once good
       }
       await Future.delayed(Duration(seconds: 1));
     }
@@ -95,6 +107,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
 
   // When a group is selected, put their pins on the map
   void groupSelectedEngagePins(GroupInfo groupInfo) async {
+    logger.d("engaging pins");
     // Nuke all the old listeners & symbols
     final controller = await mapController.future;
     for (final Symbol symbol in _activeSymbols.values) {

@@ -189,6 +189,7 @@ class LocationService {
       }
       logger.d("Message incoming!");
       if (message.embed != null) {
+        logger.d("And it has an embed");
         final MessageEmbed messageEmbed =
             MessageEmbed.fromMsgpack(message.embed!);
         // Create user state then push it to hive
@@ -204,7 +205,7 @@ class LocationService {
         userStateBox.put(message.senderId, newUserState);
 
         logger.d(
-            "Decode:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
+            "Just Put ${message.senderId}:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
       } else {
         logger.d("Message had no geo embed");
       }

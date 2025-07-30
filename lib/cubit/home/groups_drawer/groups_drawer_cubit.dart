@@ -46,7 +46,10 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   }
 
   Future<void> createGroup() async {
-    if (s5messenger == null) return;
+    if (s5messenger == null) {
+      logger.e("s5_messenger is not yet loaded, cannot create group.");
+      return;
+    }
     try {
       GroupState newGroup = await s5messenger!.createNewGroup();
       loadGroups(); // Refresh the list

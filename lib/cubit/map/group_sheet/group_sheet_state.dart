@@ -9,3 +9,5 @@ class GroupSheetInviteCreated extends GroupSheetState {}
 class GroupSheetShareLocationUpdated extends GroupSheetState {}
 
 class GroupSheetShareLocationOneShot extends GroupSheetState {}
+
+class GroupSheetAllUsersLoaded extends GroupSheetState {}
