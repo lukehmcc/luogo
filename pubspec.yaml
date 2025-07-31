@@ -45,6 +45,8 @@ dependencies:
   msgpack_dart: ^1.0.1
   uuid: ^4.5.1
   intl: ^0.20.2
+  background_fetch: ^1.4.0
+  get_it: ^8.1.0
 
 dev_dependencies:
   flutter_test:

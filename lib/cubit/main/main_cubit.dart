@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/hive/hive_registrar.g.dart';
@@ -50,6 +51,8 @@ class MainCubit extends Cubit<MainState> {
         ..registerAdapters();
       locationService = LocationService(prefs: prefs);
       await locationService.startPeriodicUpdates(intervalSeconds: 5);
+      // register it here so I can grab for the background task later
+      GetIt.I.registerSingleton<LocationService>(locationService);
       emit(MainStateLightInitialized(
         prefs: prefs,
         locationService: locationService,
