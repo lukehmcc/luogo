@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lib5/util.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/model/user_state.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:s5_messenger/s5_messenger.dart';
 
@@ -23,6 +25,26 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   }) : super(GroupsDrawerInitial());
 
   String? currentGroupID;
+
+  String? getMemebersFromGroup(String groupID) {
+    String toReturn = "you";
+    if (s5messenger != null) {
+      GroupState groupState = s5messenger!.group(groupID);
+      for (final GroupMember member in groupState.members) {
+        final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
+        if (memberID == locationService.myID) {
+          continue; // skip if self, no need to waste a loop
+        }
+
+        // First gotta add the initial symbols
+        final UserState? userState = locationService.userStateBox.get(memberID);
+        if (userState != null) {
+          toReturn += ", ${userState.name}";
+        }
+      }
+    }
+    return toReturn;
+  }
 
   Future<void> setS5Messenger(S5Messenger s5messengerIn) async {
     s5messenger = s5messengerIn;

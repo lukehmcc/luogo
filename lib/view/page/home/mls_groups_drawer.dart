@@ -106,7 +106,10 @@ class GroupListView extends StatelessWidget {
                   }
                 },
                 title: Text(group.name),
-                subtitle: Text(group.id),
+                subtitle: Text(context
+                        .read<GroupsDrawerCubit>()
+                        .getMemebersFromGroup(group.id) ??
+                    "Members: you"),
                 selected: s5messenger.messengerState.groupId == group.id,
                 selectedTileColor:
                     Theme.of(context).colorScheme.primaryContainer,
