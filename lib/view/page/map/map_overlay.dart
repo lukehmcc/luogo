@@ -73,8 +73,10 @@ class _MapOverlayContent extends StatelessWidget {
                 builder: (BuildContext context) {
                   return BlocProvider<KeypairQRCubit>(
                     create: (BuildContext context) => KeypairQRCubit(
-                        s5messenger: s5messenger,
-                        locationService: locationService),
+                      s5messenger: s5messenger,
+                      locationService: locationService,
+                      prefs: prefs,
+                    ),
                     child: KeypairQrReadWriteDialog(
                       keypair: mapOverlayState.keypair,
                       homeCubit: homeCubit,
@@ -163,8 +165,10 @@ class _MapOverlayContent extends StatelessWidget {
                 builder: (BuildContext context) {
                   return BlocProvider<KeypairQRCubit>(
                     create: (BuildContext context) => KeypairQRCubit(
-                        s5messenger: s5messenger,
-                        locationService: locationService),
+                      s5messenger: s5messenger,
+                      locationService: locationService,
+                      prefs: prefs,
+                    ),
                     child: KeypairQrReadWriteDialog(
                       keypair: mapOverlayState.keypair,
                       homeCubit: homeCubit,

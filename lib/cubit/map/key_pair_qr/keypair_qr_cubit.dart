@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,8 +7,11 @@ import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/key_pair_qr/keypair_qr_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/model/message_embed.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:s5_messenger/s5_messenger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 /// A Cubit class for managing the keypair QR state.
@@ -25,8 +29,12 @@ import 'package:uuid/uuid.dart';
 class KeypairQRCubit extends Cubit<KeypairQRState> {
   final S5Messenger s5messenger;
   final LocationService locationService;
-  KeypairQRCubit({required this.s5messenger, required this.locationService})
-      : super(KeypairQRInitial());
+  final SharedPreferencesWithCache prefs;
+  KeypairQRCubit({
+    required this.s5messenger,
+    required this.locationService,
+    required this.prefs,
+  }) : super(KeypairQRInitial());
 
   bool isQRSelected = true;
   TextEditingController textController = TextEditingController();
@@ -48,12 +56,22 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
     String myID = (s5messenger.dataBox.get('identity_default')
         as Map<dynamic, dynamic>)['publicKey'];
 
+    // Grab the locaiton and encode it to bytes
+    final LatLng? loc =
+        locationService.locationBox.get('local_position')?.toLatLng();
+    final Uint8List? messageEmbedBytes = (loc != null)
+        ? MessageEmbed.fromPrefs(loc, prefs, null).toMsgpack()
+        : null;
+
+    // Accept the invite and send along the location so the other person knows
+    // where you are immediately
     final groupId = await s5messenger.acceptInviteAndJoinGroup(
       base64UrlNoPaddingDecode(
         welcomeMessage.substring(25),
       ),
       myID,
       Uuid().v4(),
+      messageEmbedBytes,
     );
 
     // Now make sure to set the group and update UI
