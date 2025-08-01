@@ -87,7 +87,7 @@ class MapView extends StatelessWidget {
                           onPressed: () =>
                               context.read<MapCubit>().moveToUser(),
                           mini: true,
-                          child: const Icon(Icons.restore),
+                          child: const Icon(Icons.navigation),
                         ),
                       ),
                     ),
