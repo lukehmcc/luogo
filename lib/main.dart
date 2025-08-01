@@ -48,8 +48,18 @@ class Luogo extends StatelessWidget {
     return MaterialApp(
       title: 'Luogo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.light, // Light theme
+        ),
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark, // Dark theme
+        ),
+      ),
+      themeMode: ThemeMode.system,
       home: const InitRouterPage(),
     );
   }
