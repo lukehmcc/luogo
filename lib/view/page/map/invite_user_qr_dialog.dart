@@ -41,7 +41,8 @@ class InviteUserQrDialog extends StatelessWidget {
               if (inviteUserQrCubit.welcomeMsg != null)
                 Column(
                   children: [
-                    SizedBox(
+                    Container(
+                      color: Colors.purple.shade50,
                       width: MediaQuery.of(context).size.width * .7,
                       height: MediaQuery.of(context).size.width * .7,
                       child: QrImageView(

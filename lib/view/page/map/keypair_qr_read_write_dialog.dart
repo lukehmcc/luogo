@@ -89,11 +89,13 @@ class KeypairQrReadWriteDialog extends StatelessWidget {
                   if (kpCubit.isQRSelected)
                     Column(
                       children: [
-                        SizedBox(
+                        Container(
+                          color: Colors.purple.shade50,
                           width: MediaQuery.of(context).size.width * .7,
                           height: MediaQuery.of(context).size.width * .7,
                           child: QrImageView(data: keypair),
                         ),
+                        const SizedBox(height: 10),
                         ElevatedButton(
                           onPressed: () => Clipboard.setData(
                             ClipboardData(text: keypair),
