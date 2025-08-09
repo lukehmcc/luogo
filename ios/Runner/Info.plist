@@ -44,10 +44,13 @@
   <string>Since this is a location sharing app, needed to access location always when the app is open.</string>
   <key>NSLocationWhenInUseUsageDescription</key>
   <string>Since this is a location sharing app, needs to access location when the app is open and run in background.</string>
-  <key>BGTaskSchedulerPermittedldentifiers</key>
+  <key>BGTaskSchedulerPermittedIdentifiers</key>
   <array>
     <string>com.transistorsoft.fetch</string>
   </array>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+
 
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
