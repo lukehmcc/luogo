@@ -12,7 +12,14 @@ def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+} else {
+    // If the file does not exist, use environment variables (probably in a gh runner)
+    keystoreProperties['storeFile'] = 'release-key.jks' ?: "<NONE>"
+    keystoreProperties['storePassword'] = System.getenv('KEY_PASSWORD') ?: "<NONE>"
+    keystoreProperties['keyAlias'] = 'uploadod' ?: "<NONE>"
+    keystoreProperties['keyPassword'] = System.getenv('KEY_PASSWORD') ?: "<NONE>"
 }
+
 
 android {
     namespace = "app.luogo.app"

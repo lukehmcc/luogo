@@ -1,0 +1,75 @@
+name: Release and build on tag
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build-ubuntu:
+    name: "Build android"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Setup Repo
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Create tag based changelog
+      - name: Create changelog text
+        id: changelog
+        uses: loopwerk/tag-changelog@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exclude_types: other,ci
+
+      # Get the dependencies going
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: "temurin"
+
+      # And begin the flutter
+      - name: Install dependencies
+        run: ./flutterw pub get
+
+      # Bulid android SIGNED
+      - name: 🔧 Build APK
+        env:
+          KEY_JKS: ${{ secrets.KEY_JKS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ALIAS_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          base64 -d <<< $KEY_JKS > ./android/app/release-key.jks
+          ./flutterw build apk --release -v --split-per-abi
+          mkdir -p ./outputs
+          cp build/app/outputs/apk/release/*.apk ./outputs/
+
+      # Create release
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{ steps.changelog.outputs.changes }}
+
+      - name: Debug output
+        run: |
+          ls
+          ls outputs
+
+      # Now upload those assets
+      - name: Upload release assets
+        uses: alexellis/upload-assets@0.4.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_paths: '["./outputs/*"]'
