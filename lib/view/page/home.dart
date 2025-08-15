@@ -104,6 +104,7 @@ class HomePage extends StatelessWidget {
               return switch (mainState) {
                 MainStateHeavyInitialized(:final s5messenger) => GroupsDrawer(
                     s5messenger: s5messenger,
+                    prefs: prefs,
                   ),
                 _ => const Drawer(
                     // Show loading drawer

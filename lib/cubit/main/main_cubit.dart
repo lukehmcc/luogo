@@ -61,6 +61,7 @@ class MainCubit extends Cubit<MainState> {
       // Do the slower dependeinces
       s5 = await S5.create(
         initialPeers: [
+          prefs.getString('s5-node') ?? '', // put the users s5 node first
           'wss://z2DeVYsXdq3Rgt8252LRwNnreAtsGr3BN6FPc6Hvg6dTtRk@s5.jptr.tech/s5/p2p',
           'wss://z2Das8aEF7oNoxkcrfvzerZ1iBPWfm6D7gy3hVE4ALGSpVB@node.sfive.net/s5/p2p',
           'wss://z2DdbxV4xyoqWck5pXXJdVzRnwQC6Gbv6o7xDvyZvzKUfuj@s5.vup.dev/s5/p2p',
@@ -70,6 +71,7 @@ class MainCubit extends Cubit<MainState> {
         persistFilePath: path.join(
             (await getApplicationDocumentsDirectory()).path, 'persist.json'),
       );
+      logger.d(s5.node.config);
       s5messenger = S5Messenger();
       await s5messenger.init(s5);
       emit(MainStateHeavyInitialized(

@@ -8,7 +8,7 @@ import 'package:luogo/model/group_info.dart';
 /// Example usage:
 /// ```dart
 /// BlocProvider(
-///   create: (context) =&gt; HomeCubit(),
+///   create: (context) =>; HomeCubit(),
 ///   child: YourHomeWidget(),
 /// )
 /// ```

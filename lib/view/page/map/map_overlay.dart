@@ -132,6 +132,7 @@ class _MapOverlayContent extends StatelessWidget {
                       child: Column(
                         children: [
                           FloatingActionButton(
+                            heroTag: "map-overlay-floater",
                             child: const Icon(Icons.group),
                             onPressed: () {
                               BlocProvider.of<MapOverlayCubit>(context)

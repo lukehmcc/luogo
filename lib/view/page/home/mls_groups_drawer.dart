@@ -4,30 +4,47 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_cubit.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
+import 'package:luogo/cubit/home/settings/settings_cubit.dart';
 import 'package:luogo/model/group_info.dart';
+import 'package:luogo/view/page/home/settings.dart';
 import 'package:s5_messenger/s5_messenger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A Drawer widget that displays and manages a list of chat groups.
 class GroupsDrawer extends StatelessWidget {
   final S5Messenger s5messenger;
-  const GroupsDrawer({super.key, required this.s5messenger});
+  final SharedPreferencesWithCache prefs;
+  const GroupsDrawer({
+    super.key,
+    required this.s5messenger,
+    required this.prefs,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
       child: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const ListTile(
-              title: Text(
-                'Groups',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            Positioned(
+              right: 20,
+              bottom: 20,
+              child: FloatingActionButton(
+                onPressed: context.read<GroupsDrawerCubit>().createGroup,
+                heroTag: "group-drawer-floater",
+                child: const Icon(Icons.add),
               ),
             ),
-            Expanded(
-              child: Stack(
-                children: [
-                  BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
+            Column(
+              children: [
+                const ListTile(
+                  title: Text(
+                    'Groups',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<GroupsDrawerCubit, GroupsDrawerState>(
                     builder: (context, state) {
                       if (state is GroupsDrawerLoading) {
                         return const Center(child: CircularProgressIndicator());
@@ -44,16 +61,30 @@ class GroupsDrawer extends StatelessWidget {
                       return const SizedBox(); // Initial state
                     },
                   ),
-                  Positioned(
-                    right: 20,
-                    bottom: 20,
-                    child: FloatingActionButton(
-                      onPressed: context.read<GroupsDrawerCubit>().createGroup,
-                      child: const Icon(Icons.add),
+                ),
+                // Add this bottom bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () {
+                        // Navigate to settings page
+                        Navigator.push<Widget>(
+                          context,
+                          MaterialPageRoute<Widget>(
+                            builder: (BuildContext context) => BlocProvider(
+                              create: (BuildContext context) =>
+                                  SettingsCubit(prefs: prefs),
+                              child: const SettingsPage(),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  )
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),

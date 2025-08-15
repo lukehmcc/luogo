@@ -84,6 +84,7 @@ class MapView extends StatelessWidget {
                       right: 20,
                       child: Center(
                         child: FloatingActionButton(
+                          heroTag: "map-hero-floater",
                           onPressed: () =>
                               context.read<MapCubit>().moveToUser(),
                           mini: true,
