@@ -5,6 +5,6 @@ abstract class HomeState {}
 class HomeInitial extends HomeState {}
 
 class HomeGroupSelected extends HomeState {
-  final GroupInfo group;
+  final GroupInfo? group;
   HomeGroupSelected(this.group);
 }

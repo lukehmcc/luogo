@@ -67,29 +67,32 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     }
   }
 
-  Future<void> createGroup() async {
+  Future<GroupState?> createGroup(String? groupName) async {
     if (s5messenger == null) {
       logger.e("s5_messenger is not yet loaded, cannot create group.");
-      return;
+      return null;
     }
     try {
-      GroupState newGroup = await s5messenger!.createNewGroup();
+      GroupState newGroup = await s5messenger!.createNewGroup(groupName);
       loadGroups(); // Refresh the list
       // Then add listener
       locationService.setupListenToPeer(newGroup);
+      return newGroup;
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
+      return null;
     }
   }
 
-  Future<void> selectGroup(String groupId) async {
+  Future<void> selectGroup(String? groupId) async {
     if (s5messenger == null || currentGroupID == groupId) return;
     try {
       s5messenger!.messengerState.groupId = groupId;
       s5messenger!.messengerState.update();
       final GroupInfoList groups =
           GroupInfo.fromJsonList(s5messenger!.groupsBox.values.toList());
-      final GroupInfo? group = groups.findByID(groupId);
+      final GroupInfo? group =
+          (groupId == null) ? null : groups.findByID(groupId);
       emit(GroupsDrawerLoaded(groups, group)); // Use same state
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
@@ -104,5 +107,11 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
     }
+  }
+
+  Future<void> leaveGroup(String groupID) async {
+    if (s5messenger == null) return;
+    s5messenger!.leaveGroup(s5messenger!.group(groupID));
+    loadGroups();
   }
 }

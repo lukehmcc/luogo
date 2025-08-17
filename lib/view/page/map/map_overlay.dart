@@ -32,9 +32,9 @@ class MapOverlay extends StatelessWidget {
     // put a listener here so whenever the group is changed the mapoverlay can respond to that
     return BlocListener<HomeCubit, HomeState>(
         listener: (BuildContext context, HomeState homeState) {
-          if (homeState is HomeGroupSelected) {
+          if (homeState is HomeGroupSelected && homeState.group != null) {
             BlocProvider.of<MapOverlayCubit>(context)
-                .groupSelectedEngagePins(homeState.group);
+                .groupSelectedEngagePins(homeState.group!);
           }
         },
         child: _MapOverlayContent(

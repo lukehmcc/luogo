@@ -5,6 +5,7 @@ import 'package:luogo/cubit/home/groups_drawer/groups_drawer_cubit.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
 import 'package:luogo/cubit/home/home_cubit.dart';
 import 'package:luogo/cubit/home/settings/settings_cubit.dart';
+import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/view/page/home/settings.dart';
 import 'package:s5_messenger/s5_messenger.dart';
@@ -30,7 +31,24 @@ class GroupsDrawer extends StatelessWidget {
               right: 20,
               bottom: 20,
               child: FloatingActionButton(
-                onPressed: context.read<GroupsDrawerCubit>().createGroup,
+                // When creating new group get the name you want first
+                onPressed: () async {
+                  final res = await showTextInputDialog(
+                    context: context,
+                    textFields: [
+                      DialogTextField(hintText: 'New Group Name:'),
+                    ],
+                  );
+                  if (res != null && res.isNotEmpty && context.mounted) {
+                    logger.d("the new group name is ${res.first}");
+                    await context
+                        .read<GroupsDrawerCubit>()
+                        .createGroup(res.first);
+                  } else if (context.mounted) {
+                    logger.d("the new group name is null");
+                    await context.read<GroupsDrawerCubit>().createGroup(null);
+                  }
+                },
                 heroTag: "group-drawer-floater",
                 child: const Icon(Icons.add),
               ),
@@ -113,8 +131,11 @@ class GroupListView extends StatelessWidget {
           }
           return ListView.builder(
             itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final group = groups[index];
+            itemBuilder: (BuildContext context, int index) {
+              final GroupInfo group = groups[index];
+              if (s5messenger.groupsBox.get(group.id) == null) {
+                return Container();
+              }
               return ListTile(
                 onTap: () {
                   context
@@ -122,19 +143,6 @@ class GroupListView extends StatelessWidget {
                       .selectGroup(group.id); // Update backend
                   context.read<HomeCubit>().groupSelected(group); // Update UI
                   Navigator.pop(context); // Close drawer
-                },
-                onLongPress: () async {
-                  final res = await showTextInputDialog(
-                    context: context,
-                    textFields: [
-                      DialogTextField(hintText: 'Edit Group Name (local)'),
-                    ],
-                  );
-                  if (res != null && res.isNotEmpty && context.mounted) {
-                    context
-                        .read<GroupsDrawerCubit>()
-                        .renameGroup(group.id, res.first);
-                  }
                 },
                 title: Text(group.name),
                 subtitle: Text(context
@@ -144,6 +152,68 @@ class GroupListView extends StatelessWidget {
                 selected: s5messenger.messengerState.groupId == group.id,
                 selectedTileColor:
                     Theme.of(context).colorScheme.primaryContainer,
+                trailing: PopupMenuButton<String>(
+                  onSelected: (String value) async {
+                    // Handle menu item selection
+                    switch (value) {
+                      case 'leave':
+                        // First deselect the group if selected
+                        final GroupInfo? currentlySelected =
+                            context.read<HomeCubit>().group;
+                        if (currentlySelected != null &&
+                            currentlySelected.id == group.id) {
+                          context
+                              .read<GroupsDrawerCubit>()
+                              .selectGroup(null); // Update backend
+                          context
+                              .read<HomeCubit>()
+                              .groupSelected(null); // Update UI
+                        }
+
+                        // Then Leave
+                        context.read<GroupsDrawerCubit>().leaveGroup(group.id);
+                      case 'rename':
+                        final res = await showTextInputDialog(
+                          context: context,
+                          textFields: [
+                            DialogTextField(
+                                hintText: 'Edit Group Name (local)'),
+                          ],
+                        );
+                        if (res != null && res.isNotEmpty && context.mounted) {
+                          context
+                              .read<GroupsDrawerCubit>()
+                              .renameGroup(group.id, res.first);
+                        }
+                    }
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'rename',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit),
+                          Center(
+                            child: Text('Rename'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'leave',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete),
+                          Center(
+                            child: Text('Leave'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  icon: Icon(Icons.more_vert), // Icon to trigger the menu
+                ),
               );
             },
           );
