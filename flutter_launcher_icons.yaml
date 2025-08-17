@@ -11,6 +11,7 @@ flutter_launcher_icons:
 
   ios: true
   remove_alpha_ios: true
+  image_path_ios: "assets/icon/logo-sqare.png"
   # image_path_ios_dark_transparent: "assets/icon/icon_dark.png"
   image_path_ios_tinted_grayscale: "assets/icon/icon-mono.png"
   desaturate_tinted_to_grayscale_ios: true
