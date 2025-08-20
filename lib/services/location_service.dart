@@ -41,16 +41,21 @@ class LocationService {
   final Uuid _uuid = Uuid();
   String? myID;
 
-  /// Call this to start periodic location updates.
-  /// Currently using live updates, not the intervals
-  Future<void> startPeriodicUpdates({int intervalSeconds = 5}) async {
-    // Check permissions first
+  // Inits the locaiton service
+  Future<void> init() async {
     locationBox = await Hive.openBox<HiveLatLng>('location');
     userStateBox = await Hive.openBox<UserState>('userState');
-    bool hasPermission = await _checkLocationPermission();
+  }
+
+  /// Call this to start periodic location updates.
+  /// Currently using live updates, not the intervals
+  /// Returns false if fails or true if sucsess
+  Future<bool> startPeriodicUpdates({int intervalSeconds = 5}) async {
+    // Check permissions first
+    bool hasPermission = await checkLocationPermissions();
     if (!hasPermission) {
       logger.e("Location Permissions are not allowed!");
-      return;
+      return false;
     }
 
     // To not flood the channel with messages, just ping every minuet
@@ -67,6 +72,7 @@ class LocationService {
       lastSentPosition = latLng;
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
     });
+    return true;
   }
 
   // static initializer for the background task
@@ -99,7 +105,7 @@ class LocationService {
 
   // A oneshot, non-continuous way to send location updates
   Future<void> sendLocationUpdateOneShot() async {
-    bool hasPermission = await _checkLocationPermission();
+    bool hasPermission = await checkLocationPermissions();
     if (!hasPermission) {
       logger.w("Background task: No location permission.");
       return;
@@ -128,16 +134,10 @@ class LocationService {
 
   // Checks & ensures permissions are granted
   // returns true if position granted
-  Future<bool> _checkLocationPermission() async {
+  Future<bool> checkLocationPermissions() async {
     // Check current permission status
     logger.d("Checking location permissions");
     LocationPermission permission = await Geolocator.checkPermission();
-
-    // If permission is denied and we haven't asked before, request it
-    if (permission == LocationPermission.denied) {
-      logger.d("Requesting Location Permissions");
-      permission = await Geolocator.requestPermission();
-    }
 
     // Now that location has been allowed (hopefully), we fetch location to
     // update the map
@@ -154,6 +154,17 @@ class LocationService {
     final LatLng? loc = locationBox.get('local_position')?.toLatLng();
     if (loc != null) {
       _updatePeers(loc);
+    }
+  }
+
+  Future<bool> askForLocationPermissions() async {
+    logger.d("Requesting Location Permissions");
+    LocationPermission permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      return true;
+    } else {
+      return false;
     }
   }
 

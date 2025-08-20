@@ -50,7 +50,17 @@ class MainCubit extends Cubit<MainState> {
         ..init(path.join(dir.path, 'hive'))
         ..registerAdapters();
       locationService = LocationService(prefs: prefs);
-      await locationService.startPeriodicUpdates(intervalSeconds: 5);
+      await locationService.init();
+      bool sucsess =
+          await locationService.startPeriodicUpdates(intervalSeconds: 5);
+      // This shuld only fail if location permissions haven't been granted, if that happens
+      // emit so the app can push to the correct page
+      if (sucsess == false) {
+        emit(MainStateNeedsLocationPermission(
+          prefs: prefs,
+          locationService: locationService,
+        ));
+      }
       // register it here so I can grab for the background task later
       GetIt.I.registerSingleton<LocationService>(locationService);
       emit(MainStateLightInitialized(
@@ -71,7 +81,6 @@ class MainCubit extends Cubit<MainState> {
         persistFilePath: path.join(
             (await getApplicationDocumentsDirectory()).path, 'persist.json'),
       );
-      logger.d(s5.node.config);
       s5messenger = S5Messenger();
       await s5messenger.init(s5);
       emit(MainStateHeavyInitialized(

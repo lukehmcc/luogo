@@ -9,6 +9,16 @@ class MainStateInitial extends MainState {}
 
 class MainStateLoading extends MainState {}
 
+class MainStateNeedsLocationPermission extends MainState {
+  final SharedPreferencesWithCache prefs;
+  final LocationService locationService;
+
+  MainStateNeedsLocationPermission({
+    required this.prefs,
+    required this.locationService,
+  });
+}
+
 /// The fast to init dependencies can be emitted quickly here
 class MainStateLightInitialized extends MainState {
   final SharedPreferencesWithCache prefs;

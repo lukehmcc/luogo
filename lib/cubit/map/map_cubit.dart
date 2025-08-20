@@ -38,6 +38,7 @@ class MapCubit extends Cubit<MapState> {
     locationService.locationBox
         .watch(key: 'local_position')
         .listen((event) async {
+      logger.d("istending....");
       // First parse the info
       if (event.value == null) {
         return;

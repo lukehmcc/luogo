@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:luogo/cubit/ask_for_location/ask_for_location_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_cubit.dart';
 import 'package:luogo/cubit/init_router/init_router_state.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/view/page/ask_for_location.dart';
 import 'package:luogo/view/page/create_profile.dart';
 import 'package:luogo/view/page/home.dart';
 import 'package:luogo/view/widgets/silly_progress_indicator.dart';
@@ -21,6 +23,11 @@ class InitRouterPage extends StatelessWidget {
         MainStateInitial() => const SillyCircularProgressIndicator(),
         MainStateLoading() => const SillyCircularProgressIndicator(),
         MainStateError(:final message) => Center(child: Text(message)),
+        MainStateNeedsLocationPermission(
+          :final prefs,
+          :final locationService,
+        ) =>
+          _buildInitRouterPage(context, prefs, locationService),
         MainStateLightInitialized(
           :final prefs,
           :final locationService,
@@ -41,7 +48,9 @@ class InitRouterPage extends StatelessWidget {
     LocationService locationService,
   ) {
     return BlocProvider(
-      create: (context) => InitRouterCubit(prefs: prefs)..checkPreferences(),
+      create: (context) =>
+          InitRouterCubit(prefs: prefs, locationService: locationService)
+            ..getRoute(),
       child: BlocListener<InitRouterCubit, InitRouterState>(
         listener: (context, state) {
           if (state is InitRouterSuccess) {
@@ -59,20 +68,38 @@ class InitRouterPage extends StatelessWidget {
     SharedPreferencesWithCache prefs,
     LocationService locationService,
   ) {
-    final page = route == RouteType.home
-        ? BlocProvider<MapCubit>(
-            create: (context) => MapCubit(
-                  locationService: locationService,
-                  prefs: prefs,
-                ),
-            child: HomePage(
-              prefs: prefs,
-              locationService: locationService,
-            ))
-        : CreateProfilePage(
+    late StatelessWidget page;
+    switch (route) {
+      case RouteType.home:
+        {
+          page = BlocProvider<MapCubit>(
+              create: (context) => MapCubit(
+                    locationService: locationService,
+                    prefs: prefs,
+                  ),
+              child: HomePage(
+                prefs: prefs,
+                locationService: locationService,
+              ));
+        }
+      case RouteType.login:
+        {
+          page = CreateProfilePage(
             prefs: prefs,
             locationService: locationService,
           );
+        }
+      case RouteType.locationPerms:
+        {
+          page = BlocProvider<AskForLocationCubit>(
+            create: (BuildContext context) => AskForLocationCubit(
+              locationService: locationService,
+              prefs: prefs,
+            ),
+            child: AskForLocationPermissionPage(),
+          );
+        }
+    }
 
     Navigator.pushAndRemoveUntil(context,
         MaterialPageRoute(builder: (context) => page), (route) => false);

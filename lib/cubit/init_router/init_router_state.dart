@@ -9,4 +9,4 @@ class InitRouterSuccess extends InitRouterState {
   InitRouterSuccess({required this.route});
 }
 
-enum RouteType { home, login }
+enum RouteType { home, login, locationPerms }

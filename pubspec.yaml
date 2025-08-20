@@ -2,7 +2,7 @@ name: luogo
 description: "Secure and simple location sharing app"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.3.0+1
+version: 0.3.0+2
 
 environment:
   sdk: ^3.6.2
@@ -47,6 +47,7 @@ dependencies:
   intl: ^0.20.2
   background_fetch: ^1.4.0
   get_it: ^8.1.0
+  flutter_svg: ^2.0.13
 
 dev_dependencies:
   flutter_test:
@@ -64,3 +65,4 @@ flutter:
   assets:
     - assets/pmtiles_style.json
     - assets/pin.png
+    - assets/fake-map.svg
