@@ -124,11 +124,20 @@ class ScaffoldDrawerButton extends StatelessWidget {
     return SafeArea(
       child: Align(
         alignment: Alignment.topLeft,
-        child: IconButton(
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-            icon: Icon(Icons.menu)),
+        child: Padding(
+          padding: EdgeInsets.all(5),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).cardColor.withValues(alpha: .5),
+            ),
+            child: IconButton(
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+                icon: Icon(Icons.menu)),
+          ),
+        ),
       ),
     );
   }
