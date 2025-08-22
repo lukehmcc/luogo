@@ -39,8 +39,8 @@ class AskForLocationPermissionPage extends StatelessWidget {
                 // Illustration
                 SizedBox(
                   height: 300,
-                  child: SvgPicture.asset(
-                    "assets/fake-map.svg",
+                  child: Image.asset(
+                    "assets/fake-map.png",
                     fit: BoxFit.contain,
                   ),
                 ),

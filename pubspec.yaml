@@ -65,4 +65,4 @@ flutter:
   assets:
     - assets/pmtiles_style.json
     - assets/pin.png
-    - assets/fake-map.svg
+    - assets/fake-map.png
