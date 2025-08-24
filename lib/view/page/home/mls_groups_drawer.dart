@@ -175,9 +175,12 @@ class GroupListView extends StatelessWidget {
                       case 'rename':
                         final res = await showTextInputDialog(
                           context: context,
+                          style: AdaptiveStyle
+                              .material, // cupertino has coloring issues so force material
                           textFields: [
                             DialogTextField(
-                                hintText: 'Edit Group Name (local)'),
+                              hintText: 'Edit Group Name (local)',
+                            ),
                           ],
                         );
                         if (res != null && res.isNotEmpty && context.mounted) {
