@@ -101,7 +101,7 @@ class AskForLocationPermissionPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text("Share Location"),
+                      child: const Text("Continue"),
                     ),
                   ],
                 ),
