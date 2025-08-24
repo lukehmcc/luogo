@@ -31,9 +31,9 @@
 
   <!-- My things here -->
   <key>NSCameraUsageDescription</key>
-  <string>Camera permission is required for barcode scanning.</string>
+  <string>Camera permission is required for scanning QR codes to pair phones. Paring is required to join groups and share location.</string>
   <key>NSPhotoLibraryUsageDescription</key>
-  <string>This app needs photos access to get QR code from photo library</string>
+  <string>This app needs photos access to get QR code from photo library. If a user gets texted a QR code for example, being able to pull it from the library is helpful.</string>
   <key>UIBackgroundModes</key>
   <array>
     <string>processing</string>
@@ -41,9 +41,9 @@
     <string>location</string>
   </array>
   <key>NSLocationAlwaysUsageDescription</key>
-  <string>Since this is a location sharing app, needed to access location always when the app is open.</string>
+  <string>Since this is a location sharing app, needed to access location always when the app is open. This allows the app to automatically share location with users it has decided to share it's location with.</string>
   <key>NSLocationWhenInUseUsageDescription</key>
-  <string>Since this is a location sharing app, needs to access location when the app is open and run in background.</string>
+  <string>Since this is a location sharing app, needs to access location when the app is open and run in background. This allows the app to automatically keep others informed of location.</string>
   <key>BGTaskSchedulerPermittedIdentifiers</key>
   <array>
     <string>com.transistorsoft.fetch</string>
