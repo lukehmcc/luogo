@@ -36,20 +36,14 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
     required this.prefs,
   }) : super(KeypairQRInitial());
 
-  bool isQRSelected = true;
   TextEditingController textController = TextEditingController();
-
-  void setQRSelected(bool selected) {
-    isQRSelected = selected;
-    emit(KeypairQSelection(isQRSelected: isQRSelected));
-  }
 
   // Once the welcome message has been generated on the other client you
   // can then scan it to join the group.
   Future<void> handleQRWelcomeMessage(String welcomeMessage) async {
     log(welcomeMessage);
 
-    if (!welcomeMessage.startsWith('s5messenger-group-invite:')) {
+    if (!welcomeMessage.startsWith('luogo-invite-key: ')) {
       throw 'Incorrect group invite';
     }
 
@@ -65,9 +59,9 @@ class KeypairQRCubit extends Cubit<KeypairQRState> {
 
     // Accept the invite and send along the location so the other person knows
     // where you are immediately
-    final groupId = await s5messenger.acceptInviteAndJoinGroup(
+    final groupId = await s5messenger.acceptInviteAndJoinGroupExternalCommit(
       base64UrlNoPaddingDecode(
-        welcomeMessage.substring(25),
+        welcomeMessage.substring(18),
       ),
       myID,
       Uuid().v4(),
