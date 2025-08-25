@@ -43,6 +43,8 @@
   <key>NSLocationAlwaysUsageDescription</key>
   <string>Since this is a location sharing app, needed to access location always when the app is open. This allows the app to automatically share location with users it has decided to share it's location with.</string>
   <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Since this is a location sharing app, needs to access location when the app is open. This allows the app to automatically keep others informed of location.</string>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
   <string>Since this is a location sharing app, needs to access location when the app is open and run in background. This allows the app to automatically keep others informed of location.</string>
   <key>BGTaskSchedulerPermittedIdentifiers</key>
   <array>
