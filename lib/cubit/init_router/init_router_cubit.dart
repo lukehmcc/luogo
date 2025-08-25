@@ -33,7 +33,7 @@ class InitRouterCubit extends Cubit<InitRouterState> {
     // Check if we have location perms
     bool locationPerms = await locationService.checkLocationPermissions();
     bool locationPermsDeniedPersisted =
-        prefs.getBool("location-perms-denied-persist") ?? false;
+        prefs.getBool("location-perms-have-been-requested") ?? false;
     if (hasColor && hasName) {
       emit(InitRouterSuccess(route: RouteType.home));
     } else if (!locationPerms && !locationPermsDeniedPersisted) {

@@ -17,11 +17,7 @@ class AskForLocationCubit extends Cubit<AskForLocationState> {
   Future<void> requestPerms() async {
     await locationService.askForLocationPermissions();
     locationService.startPeriodicUpdates();
+    prefs.setBool("location-perms-have-been-requested", true);
     emit(AskForLocationApproved());
-  }
-
-  void denyRequestPerms() {
-    prefs.setBool("location-perms-denied-persist", true);
-    emit(AskForLocationDenied());
   }
 }

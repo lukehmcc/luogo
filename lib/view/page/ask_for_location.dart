@@ -71,20 +71,6 @@ class AskForLocationPermissionPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    OutlinedButton(
-                      onPressed: () =>
-                          BlocProvider.of<AskForLocationCubit>(context)
-                              .denyRequestPerms(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text("No Thanks"),
-                    ),
-                    const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: () =>
                           BlocProvider.of<AskForLocationCubit>(context)
