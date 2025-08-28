@@ -184,9 +184,13 @@ class GroupListView extends StatelessWidget {
                           ],
                         );
                         if (res != null && res.isNotEmpty && context.mounted) {
+                          // on rename both rename the group, then reselect it so the update propagates
                           context
                               .read<GroupsDrawerCubit>()
                               .renameGroup(group.id, res.first);
+                          logger.d(group);
+                          context.read<HomeCubit>().groupSelected(GroupInfo(
+                              id: group.id, name: res.first)); // Update UI
                         }
                     }
                   },

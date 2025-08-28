@@ -203,6 +203,7 @@ class LocationService {
       logger.d("Message incoming!");
       if (message.embed != null) {
         logger.d("And it has an embed");
+        // Update the user's locaiton
         final MessageEmbed messageEmbed =
             MessageEmbed.fromMsgpack(message.embed!);
         // Create user state then push it to hive
@@ -219,6 +220,11 @@ class LocationService {
 
         logger.d(
             "Just Put ${message.senderId}:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
+
+        // Then if there's a new group chat name, deal with that as well
+        if (messageEmbed.newGroupName != null) {
+          group.rename(messageEmbed.newGroupName!);
+        }
       } else {
         logger.d("Message had no geo embed");
       }
