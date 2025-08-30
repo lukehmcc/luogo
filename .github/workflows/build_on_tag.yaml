@@ -49,7 +49,7 @@ jobs:
           base64 -d <<< $KEY_JKS > ./android/app/release-key.jks
           ./flutterw build apk --flavor prod --release -v --split-per-abi
           mkdir -p ./outputs
-          cp build/app/outputs/apk/release/*.apk ./outputs/
+          cp build/app/outputs/apk/prod/release/*.apk ./outputs/
 
       # Create release
       - name: Create Release
