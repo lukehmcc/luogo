@@ -35,6 +35,8 @@ class GroupsDrawer extends StatelessWidget {
                 onPressed: () async {
                   final res = await showTextInputDialog(
                     context: context,
+                    style: AdaptiveStyle
+                        .material, // cupertino has coloring issues so force material
                     textFields: [
                       DialogTextField(hintText: 'New Group Name:'),
                     ],
