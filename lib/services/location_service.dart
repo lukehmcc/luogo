@@ -120,6 +120,36 @@ class LocationService {
     }
   }
 
+  // When renaming a group, make sure to call this
+  // TODO: Finish implementing oneshot renames
+  Future<void> sendRenameUpdate(String groupID, String newName) async {
+    // try {
+    //   final LatLng currentLoc = locationBox.get('local_position')?.toLatLng();
+    //   final Uint8List messageEmbedBytes =
+    //       MessageEmbed.fromPrefs(c, prefs, null).toMsgpack();
+    //   // Will run all the time, but won't actually do anything if s5Messenger isn't ready
+    //   if (s5messenger != null) {
+    //     for (final MapEntry<String, GroupState> group
+    //         in s5messenger!.groups.entries) {
+    //       GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
+    //       // Now if the location should be shared, share the current location
+    //       if (groupSettings.shareLocation == true && myID != null) {
+    //         // grab ID
+    //         s5messenger!.group(group.key).sendMessage(
+    //               "location update",
+    //               messageEmbedBytes,
+    //               myID!,
+    //               _uuid.v4(),
+    //             );
+    //         logger.d("sent location");
+    //       }
+    //     }
+    //   }
+    // } catch (e) {
+    //   logger.e('Error fetching/sending location in background: $e');
+    // }
+  }
+
   // Internal location fetcher for oneshots
   Future<void> _fetchLocation() async {
     try {

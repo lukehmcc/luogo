@@ -43,7 +43,7 @@ git clone --recursive https://github.com/lukehmcc/luogo.git # make sure to recus
 # If you forgot to recurse and already cloned you can do this
 # git submodule init && git submodule update
 cd luogo/
-./flutterw run # Make sure to run with the flutter wrapper so everyone is on the same flutter version
+./flutterw run --flavor dev # Make sure to run with the flutter wrapper so everyone is on the same flutter version
 ```
 
 Feel free to [submit an issue](https://github.com/lukehmcc/luogo/issues) or [PR](https://github.com/lukehmcc/luogo/pulls) if you run into any issues. I'm here to collaborate and make the best app possible!

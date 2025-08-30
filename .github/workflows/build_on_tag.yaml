@@ -47,7 +47,7 @@ jobs:
           ALIAS_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           base64 -d <<< $KEY_JKS > ./android/app/release-key.jks
-          ./flutterw build apk --release -v --split-per-abi
+          ./flutterw build apk --flavor prod --release -v --split-per-abi
           mkdir -p ./outputs
           cp build/app/outputs/apk/release/*.apk ./outputs/
 

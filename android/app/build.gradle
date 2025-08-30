@@ -59,6 +59,19 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+    flavorDimensions "default"
+    productFlavors {
+        dev {
+            dimension "default"
+            resValue "string", "app_name", "Luogo (dev)"
+            applicationIdSuffix ".dev"
+        }
+        prod {
+            dimension "default"
+            resValue "string", "app_name", "Luogo"
+            applicationIdSuffix ""
+        }
+    }
 }
 
 flutter {
