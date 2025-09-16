@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A Cubit class for managing the settings state.
@@ -23,8 +24,15 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (nodeString != null) {
       controller.text = nodeString;
     }
+    PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
+      String v = packageInfo.version;
+      String b = packageInfo.buildNumber;
+      version = "version $v+$b";
+      emit(state);
+    });
   }
   TextEditingController controller = TextEditingController();
+  String version = "";
 
   void setS5Node() {
     if (_validateUrl(controller.text)) {

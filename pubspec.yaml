@@ -49,6 +49,7 @@ dependencies:
   get_it: ^8.1.0
   flutter_svg: ^2.0.13
   flutter_text_viewer: ^0.0.6
+  package_info_plus: ^8.3.1
 
 dev_dependencies:
   flutter_test:
