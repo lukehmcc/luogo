@@ -6,13 +6,23 @@ import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/init_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 // This is my only global var, as no init process
-final Logger logger = Logger();
+late Logger logger;
 
 /// Main fucntion that starts everything. Utilizes a Cubit to handle state
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Init logger to path if in prod
+  logger = Logger(
+      output: MultiOutput([
+    AdvancedFileOutput(
+      path: p.join((await getApplicationSupportDirectory()).path, "log.txt"),
+    ),
+    ConsoleOutput(),
+  ]));
   // Initialize background fetch
   await BackgroundFetch.configure(
       BackgroundFetchConfig(
@@ -22,6 +32,7 @@ void main() async {
       ), (taskId) async {
     logger.i("[BackgroundFetch] Event received");
     try {
+      // TODO: Handle if app never was init before
       await GetIt.I<LocationService>().sendLocationUpdateOneShot();
       // await locationService.sendLocationUpdateOneShot();
       logger.i("Background fetch ran");

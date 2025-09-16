@@ -46,6 +46,12 @@ cd luogo/
 ./flutterw run --flavor dev # Make sure to run with the flutter wrapper so everyone is on the same flutter version
 ```
 
+To build a production apk:
+
+```bash
+./flutterw build appbundle --flavor prod
+```
+
 Feel free to [submit an issue](https://github.com/lukehmcc/luogo/issues) or [PR](https://github.com/lukehmcc/luogo/pulls) if you run into any issues. I'm here to collaborate and make the best app possible!
 
 ## Architecture
@@ -60,4 +66,4 @@ Luogo is an Italian word for Place. Just thought it sounded nice (and no one had
 
 ## Acknowledgement
 
-This work is supported by a [Sia Foundation](https://sia.tech/) grant.
+Th work is supported by a [Sia Foundation](https://sia.tech/) grant.

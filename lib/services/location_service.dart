@@ -105,6 +105,8 @@ class LocationService {
 
   // A oneshot, non-continuous way to send location updates
   Future<void> sendLocationUpdateOneShot() async {
+    await _syncGroupsOnce();
+    // give it a couple seconds to catch up
     bool hasPermission = await checkLocationPermissions();
     if (!hasPermission) {
       logger.w("Background task: No location permission.");
@@ -118,6 +120,41 @@ class LocationService {
     } catch (e) {
       logger.e('Error fetching/sending location in background: $e');
     }
+  }
+
+// Called from sendLocationUpdateOneShot()
+  Future<void> _syncGroupsOnce() async {
+    if (s5messenger != null) {
+      final futures =
+          s5messenger!.groups.values.map((g) => _waitForGroupSync(g));
+      await Future.wait<void>(futures);
+    } else {
+      logger.e("S5 messenger not init");
+    }
+  }
+
+// Wait until the last message of one group is processed
+  Future<void> _waitForGroupSync(GroupState group) {
+    final completer = Completer<void>();
+    late StreamSubscription sub;
+
+    sub = group.messageListStateNotifier.stream.listen((_) {
+      // Already processed everything we need
+      if (!completer.isCompleted) {
+        completer.complete();
+        logger.d("Group synced: ${group.groupId}");
+      }
+    });
+
+    // If nothing new arrives, complete anyway
+    Timer(const Duration(seconds: 2), () {
+      if (!completer.isCompleted) {
+        completer.complete();
+        logger.d("Group timed out: ${group.groupId}");
+      }
+    });
+
+    return completer.future.whenComplete(() => sub.cancel());
   }
 
   // When renaming a group, make sure to call this

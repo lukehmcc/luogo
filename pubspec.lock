@@ -424,6 +424,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_text_viewer:
+    dependency: "direct main"
+    description:
+      name: flutter_text_viewer
+      sha256: "1903d62684f67420478d7179a412808af3082ebe5d53a0050a8ebbbf44153b73"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.6"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
