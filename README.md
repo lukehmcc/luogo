@@ -11,13 +11,13 @@
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=app.luogo.app">
     <img src="https://github.com/pioug/google-play-badges/blob/main/svg/English.svg"
-         width="300"
+         width="150"
          alt="Google Play badge">
   </a>
 
   <a href="https://apps.apple.com/us/app/luogo-group-location-sharing/id6749677387">
     <img src="https://github.com/ziadsarour/stores-badges/blob/master/appstore/black/en.svg"
-         width="300"
+         width="150"
          alt="App Store badge">
   </a>
 </p>
