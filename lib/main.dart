@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,13 +18,17 @@ late Logger logger;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Init logger to path if in prod
+  String logPath = p.join((await getApplicationSupportDirectory()).path, "log");
   logger = Logger(
       output: MultiOutput([
     AdvancedFileOutput(
-      path: p.join((await getApplicationSupportDirectory()).path, "log.txt"),
+      path: logPath, // Path to log folder
     ),
     ConsoleOutput(),
   ]));
+  logger.d("Logging at: $logPath");
+  final dir = Directory(logPath);
+  logger.d(await dir.list().map((e) => e.path).join('\n'));
   // Initialize background fetch
   await BackgroundFetch.configure(
       BackgroundFetchConfig(

@@ -93,7 +93,8 @@ class GroupsDrawer extends StatelessWidget {
                         Navigator.push<Widget>(
                           context,
                           MaterialPageRoute<Widget>(
-                            builder: (BuildContext context) => BlocProvider(
+                            builder: (BuildContext context) =>
+                                BlocProvider<SettingsCubit>(
                               create: (BuildContext context) =>
                                   SettingsCubit(prefs: prefs),
                               child: const SettingsPage(),

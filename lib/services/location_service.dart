@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:intl/intl.dart';
 import 'package:luogo/hive/hive_registrar.g.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_settings.dart';
@@ -105,6 +106,7 @@ class LocationService {
 
   // A oneshot, non-continuous way to send location updates
   Future<void> sendLocationUpdateOneShot() async {
+    logger.d("Current time: ${DateFormat('h:mm a').format(DateTime.now())}");
     await _syncGroupsOnce();
     // give it a couple seconds to catch up
     bool hasPermission = await checkLocationPermissions();
