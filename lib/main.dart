@@ -20,12 +20,13 @@ void main() async {
   // Init logger to path if in prod
   String logPath = p.join((await getApplicationSupportDirectory()).path, "log");
   logger = Logger(
+      filter: ProductionFilter(),
       output: MultiOutput([
-    AdvancedFileOutput(
-      path: logPath, // Path to log folder
-    ),
-    ConsoleOutput(),
-  ]));
+        AdvancedFileOutput(
+          path: logPath, // Path to log folder
+        ),
+        ConsoleOutput(),
+      ]));
   logger.d("Logging at: $logPath");
   final dir = Directory(logPath);
   logger.d(await dir.list().map((e) => e.path).join('\n'));
