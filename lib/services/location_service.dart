@@ -10,6 +10,8 @@ import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/message_embed.dart';
 import 'package:luogo/model/user_state.dart';
+import 'package:luogo/utils/check_s5_connectivity.dart';
+import 'package:luogo/utils/s5_logger.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:s5/s5.dart';
@@ -94,6 +96,14 @@ class LocationService {
     service.userStateBox = await Hive.openBox<UserState>('userState');
 
     final s5 = await S5.create(
+      initialPeers: [
+        prefs.getString('s5-node') ?? '', // put the users s5 node first
+        'wss://z2DeVYsXdq3Rgt8252LRwNnreAtsGr3BN6FPc6Hvg6dTtRk@s5.jptr.tech/s5/p2p',
+        'wss://z2Das8aEF7oNoxkcrfvzerZ1iBPWfm6D7gy3hVE4ALGSpVB@node.sfive.net/s5/p2p',
+        'wss://z2DdbxV4xyoqWck5pXXJdVzRnwQC6Gbv6o7xDvyZvzKUfuj@s5.vup.dev/s5/p2p',
+        'wss://z2DWuWNZcdSyZLpXFK2uCU3haaWMXrDAgxzv17sDEMHstZb@s5.garden/s5/p2p',
+      ],
+      logger: SilentLogger(),
       persistFilePath: path.join(
           (await getApplicationDocumentsDirectory()).path, 'persist.json'),
     );
@@ -107,7 +117,6 @@ class LocationService {
   // A oneshot, non-continuous way to send location updates
   Future<void> sendLocationUpdateOneShot() async {
     logger.d("Current time: ${DateFormat('h:mm a').format(DateTime.now())}");
-    await _syncGroupsOnce();
     // give it a couple seconds to catch up
     bool hasPermission = await checkLocationPermissions();
     if (!hasPermission) {
@@ -118,45 +127,12 @@ class LocationService {
     try {
       final Position position = await Geolocator.getCurrentPosition();
       final LatLng latLng = LatLng(position.latitude, position.longitude);
+      logger.d("Attempting to update peers");
       await _updatePeers(latLng);
+      logger.d("Updated peers");
     } catch (e) {
       logger.e('Error fetching/sending location in background: $e');
     }
-  }
-
-// Called from sendLocationUpdateOneShot()
-  Future<void> _syncGroupsOnce() async {
-    if (s5messenger != null) {
-      final futures =
-          s5messenger!.groups.values.map((g) => _waitForGroupSync(g));
-      await Future.wait<void>(futures);
-    } else {
-      logger.e("S5 messenger not init");
-    }
-  }
-
-// Wait until the last message of one group is processed
-  Future<void> _waitForGroupSync(GroupState group) {
-    final completer = Completer<void>();
-    late StreamSubscription sub;
-
-    sub = group.messageListStateNotifier.stream.listen((_) {
-      // Already processed everything we need
-      if (!completer.isCompleted) {
-        completer.complete();
-        logger.d("Group synced: ${group.groupId}");
-      }
-    });
-
-    // If nothing new arrives, complete anyway
-    Timer(const Duration(seconds: 2), () {
-      if (!completer.isCompleted) {
-        completer.complete();
-        logger.d("Group timed out: ${group.groupId}");
-      }
-    });
-
-    return completer.future.whenComplete(() => sub.cancel());
   }
 
   // When renaming a group, make sure to call this
@@ -242,14 +218,19 @@ class LocationService {
     // Set you ID so it can be used later
     myID = (s5messenger!.dataBox.get('identity_default')
         as Map<dynamic, dynamic>)['publicKey'];
-    _initializeGroupListeners();
+    initializeGroupListeners();
   }
 
-  void _initializeGroupListeners() async {
+  void initializeGroupListeners() async {
     // gotta wait here for the groups to populate, then you can add the subscriptions
     while (s5messenger!.groups.isEmpty) {
       await Future.delayed(Duration(milliseconds: 250));
     }
+
+    // For safety, make sure to dispose of any previous listeners
+    groupListeners.forEach((_, sub) => sub.cancel());
+    groupListeners.clear();
+
     // Set a listener for each group then start listening for updates of location
     for (final GroupState group in s5messenger!.groups.values) {
       logger.d("Setting up listener for: ${group.groupId}");
@@ -304,6 +285,11 @@ class LocationService {
   // On every location update, this guy'll check which groups are good to ping,
   // then send them the locaiton
   Future<void> _updatePeers(LatLng latLng) async {
+    // before you do anything, test if s5 is online
+    if (s5messenger?.s5 != null) {
+      logger.d(
+          "S5 is currently ${(await checkS5Online(s5messenger!.s5) ? "online" : "offline")}");
+    }
     final Uint8List messageEmbedBytes =
         MessageEmbed.fromPrefs(latLng, prefs, null).toMsgpack();
     // Will run all the time, but won't actually do anything if s5Messenger isn't ready

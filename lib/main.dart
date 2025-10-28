@@ -39,13 +39,30 @@ void main() async {
       ), (taskId) async {
     logger.i("[BackgroundFetch] Event received");
     try {
-      // TODO: Handle if app never was init before
-      await GetIt.I<LocationService>().sendLocationUpdateOneShot();
+      // attempt to grab the old location service
+      try {
+        LocationService locationService = GetIt.I<LocationService>();
+        locationService.initializeGroupListeners();
+        await locationService.sendLocationUpdateOneShot();
+        logger.d("Sucsessfully background oneshot");
+      } catch (e) {
+        // if it fails create a new one
+        logger.e("Failed to get location service: $e");
+        logger.d("attempting re-init");
+        LocationService locationService =
+            await LocationService.initializeForBackground();
+        locationService.initializeGroupListeners();
+        await locationService.sendLocationUpdateOneShot();
+        // Now that it has been re-inited, start listener and update peers
+      }
+
       // await locationService.sendLocationUpdateOneShot();
       logger.i("Background fetch ran");
     } catch (e) {
       logger.e("Background fetch failed: $e");
     }
+    // give the listeners some breathing room to finsih and then gracefully exit
+    await Future.delayed(const Duration(seconds: 10));
     BackgroundFetch.finish(taskId);
   }, (taskId) => BackgroundFetch.finish(taskId) // Timeout handler
       );

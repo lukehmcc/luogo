@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/settings/settings_cubit.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/utils/check_s5_connectivity.dart';
 import 'package:luogo/view/widgets/file_viewer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
