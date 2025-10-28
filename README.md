@@ -1,3 +1,5 @@
+> ⚠️Luogo is beta software! I've done my best to build a functional app, but if you run into any issues please file an [issue](https://github.com/lukehmcc/luogo/issues).
+
 # Luogo
 
 *A Simple & Secure Group Location Sharing App*  
@@ -29,8 +31,6 @@
 ![3screenshots](assets/screenshots.jpg)
 
 **Luogo** is a cross-platform mobile app that allows groups of people to easily share their location without it [being sold](https://www.theverge.com/2021/12/9/22820381/tile-life360-location-tracking-data-privacy). Fully open source, writing in dart & rust, and utilizing modern MLS & encryption tech. You no longer have to trust a large corporatoin with your data.
-
-> ⚠️Luogo is beta software! I've done my best to build a functional app, but if you run into any issues please file an [issue](https://github.com/lukehmcc/luogo/issues).
 
 ---
 
