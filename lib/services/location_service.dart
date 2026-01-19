@@ -108,7 +108,10 @@ class LocationService {
           (await getApplicationDocumentsDirectory()).path, 'persist.json'),
     );
     final s5messenger = S5Messenger();
-    await s5messenger.init(s5);
+    await s5messenger.init(
+        s5,
+        path.join((await getApplicationDocumentsDirectory()).path,
+            'keystore.sqlite'));
     service.setS5Messenger(s5messenger);
 
     return service;
