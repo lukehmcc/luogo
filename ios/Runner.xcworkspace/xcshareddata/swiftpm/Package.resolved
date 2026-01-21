@@ -1,0 +1,23 @@
+{
+  "pins" : [
+    {
+      "identity" : "maplibre-gl-native-distribution",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/maplibre/maplibre-gl-native-distribution.git",
+      "state" : {
+        "revision" : "60d9bb85c94ce6e7fc4406cd32529fd12bdb7809",
+        "version" : "6.14.0"
+      }
+    },
+    {
+      "identity" : "transistor-background-fetch",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/transistorsoft/transistor-background-fetch.git",
+      "state" : {
+        "revision" : "ba64a5ca902b36601a0c8a9a46d5510cf7a63c1c",
+        "version" : "4.0.6"
+      }
+    }
+  ],
+  "version" : 2
+}

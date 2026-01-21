@@ -82,7 +82,10 @@ class MainCubit extends Cubit<MainState> {
             (await getApplicationDocumentsDirectory()).path, 'persist.json'),
       );
       s5messenger = S5Messenger();
-      await s5messenger.init(s5, path.join(dir.path, 'keystore.sqlite'));
+      await s5messenger.init(
+          s5,
+          path.join((await getApplicationDocumentsDirectory()).path,
+              'keystore.sqlite'));
       emit(MainStateHeavyInitialized(
         s5: s5,
         s5messenger: s5messenger,
