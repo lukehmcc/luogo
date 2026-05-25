@@ -173,18 +173,6 @@ class LocationService {
     // }
   }
 
-  // Internal location fetcher for oneshots
-  Future<void> _fetchLocation() async {
-    try {
-      final Position position = await Geolocator.getCurrentPosition();
-      final LatLng latLng = LatLng(position.latitude, position.longitude);
-      locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
-      logger.d("Local Position: ${latLng.longitude}, ${latLng.latitude}");
-    } catch (e) {
-      logger.e('Error fetching location: $e');
-    }
-  }
-
   // Checks & ensures permissions are granted
   // returns true if position granted
   Future<bool> checkLocationPermissions() async {
