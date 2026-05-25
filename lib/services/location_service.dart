@@ -108,10 +108,7 @@ class LocationService {
           (await getApplicationDocumentsDirectory()).path, 'persist.json'),
     );
     final s5messenger = S5Messenger();
-    await s5messenger.init(
-        s5,
-        path.join((await getApplicationDocumentsDirectory()).path,
-            'keystore.sqlite'));
+    await s5messenger.init(s5, path.join(dir.path, 'keystore.sqlite'));
     service.setS5Messenger(s5messenger);
 
     return service;
@@ -128,6 +125,14 @@ class LocationService {
     }
 
     try {
+      // Wait for groups to be ready before sending
+      int attempts = 0;
+      while (s5messenger == null ||
+          s5messenger!.groups.isEmpty && attempts < 20) {
+        await Future.delayed(Duration(milliseconds: 500));
+        attempts++;
+      }
+
       final Position position = await Geolocator.getCurrentPosition();
       final LatLng latLng = LatLng(position.latitude, position.longitude);
       logger.d("Attempting to update peers");
@@ -187,10 +192,6 @@ class LocationService {
     logger.d("Checking location permissions");
     LocationPermission permission = await Geolocator.checkPermission();
 
-    // Now that location has been allowed (hopefully), we fetch location to
-    // update the map
-    await _fetchLocation();
-
     // Return true only if permission is granted (while or after asking)
     return permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always;
@@ -226,8 +227,15 @@ class LocationService {
 
   void initializeGroupListeners() async {
     // gotta wait here for the groups to populate, then you can add the subscriptions
-    while (s5messenger!.groups.isEmpty) {
+    int attempts = 0;
+    while (s5messenger!.groups.isEmpty && attempts < 20) {
       await Future.delayed(Duration(milliseconds: 250));
+      attempts++;
+    }
+
+    if (s5messenger!.groups.isEmpty) {
+      logger.d("No groups found after waiting.");
+      return;
     }
 
     // For safety, make sure to dispose of any previous listeners
@@ -303,7 +311,7 @@ class LocationService {
         // Now if the location should be shared, share the current location
         if (groupSettings.shareLocation == true && myID != null) {
           // grab ID
-          s5messenger!.group(group.key).sendMessage(
+          await s5messenger!.group(group.key).sendMessage(
                 "location update",
                 messageEmbedBytes,
                 myID!,
