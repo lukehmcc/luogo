@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -34,6 +35,8 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
   SharedPreferencesWithCache prefs;
   LocationService locationService;
   late bool shareLocation;
+  late final StreamSubscription _subscription;
+
   GroupSheetCubit(
       {required this.s5messenger,
       required this.groupInfo,
@@ -41,6 +44,21 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
       required this.locationService})
       : super(GroupSheetInitial()) {
     shareLocation = GroupSettings.load(groupInfo.id, prefs).shareLocation;
+
+    // Listen for group name changes while the sheet is open
+    _subscription = s5messenger.messengerState.stream.listen((_) {
+      final groupData = s5messenger.groupsBox.get(groupInfo.id);
+      if (groupData != null) {
+        final updatedGroup = GroupInfo.fromJson({
+          'id': groupInfo.id,
+          'name': groupData['name'],
+        });
+        if (updatedGroup.name != groupInfo.name) {
+          groupInfo = updatedGroup;
+          emit(GroupSheetShareLocationUpdated()); // Re-use state to trigger rebuild
+        }
+      }
+    });
   }
 
   // Shows the screen that scans the other user's ID and generates a QR code
@@ -113,5 +131,11 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
       }
       await Future.delayed(Duration(seconds: 1));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _subscription.cancel();
+    return super.close();
   }
 }

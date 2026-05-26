@@ -7,6 +7,7 @@ import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/cubit/main/main_state.dart';
 import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_cubit.dart';
+import 'package:luogo/model/group_info.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/page/map.dart';
 import 'package:luogo/view/page/map/map_overlay.dart';
@@ -66,23 +67,36 @@ class HomePage extends StatelessWidget {
                         // make sure to not do it multiple times though to only have 1 listener going
                         if (locationService.s5messenger == null) {
                           locationService.setS5Messenger(mainCubit.s5messenger);
+                          context
+                              .read<HomeCubit>()
+                              .setS5Messenger(mainCubit.s5messenger);
                         }
-                        return BlocProvider<MapOverlayCubit>(
-                            create: (BuildContext context) => MapOverlayCubit(
-                                  selectedGroup: homeCubit.group,
+                        return BlocBuilder<HomeCubit, HomeState>(
+                          builder: (context, state) {
+                            final GroupInfo? currentGroup =
+                                (state is HomeGroupSelected)
+                                    ? state.group
+                                    : homeCubit.group;
+                            return BlocProvider<MapOverlayCubit>(
+                                create: (BuildContext context) =>
+                                    MapOverlayCubit(
+                                      selectedGroup: currentGroup,
+                                      s5messenger: mainCubit.s5messenger,
+                                      locationService: locationService,
+                                      mapController: context
+                                          .read<MapCubit>()
+                                          .mapController,
+                                      symbolIDMap:
+                                          context.read<MapCubit>().symbolIDMap,
+                                    ),
+                                child: MapOverlay(
+                                  groupInfo: currentGroup,
                                   s5messenger: mainCubit.s5messenger,
                                   locationService: locationService,
-                                  mapController:
-                                      context.read<MapCubit>().mapController,
-                                  symbolIDMap:
-                                      context.read<MapCubit>().symbolIDMap,
-                                ),
-                            child: MapOverlay(
-                              groupInfo: homeCubit.group,
-                              s5messenger: mainCubit.s5messenger,
-                              locationService: locationService,
-                              prefs: prefs,
-                            ));
+                                  prefs: prefs,
+                                ));
+                          },
+                        );
                       } else {
                         return Container();
                       }

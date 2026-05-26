@@ -182,7 +182,7 @@ class GroupListView extends StatelessWidget {
                               .material, // cupertino has coloring issues so force material
                           textFields: [
                             DialogTextField(
-                              hintText: 'Edit Group Name (local)',
+                              hintText: 'Edit Group Name',
                             ),
                           ],
                         );

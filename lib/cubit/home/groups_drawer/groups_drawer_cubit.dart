@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lib5/util.dart';
 import 'package:luogo/cubit/home/groups_drawer/groups_drawer_state.dart';
@@ -19,6 +21,7 @@ import 'package:s5_messenger/s5_messenger.dart';
 class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
   S5Messenger? s5messenger; // mutable so can load async
   LocationService locationService;
+  StreamSubscription? _subscription;
 
   GroupsDrawerCubit({
     required this.locationService,
@@ -48,13 +51,16 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
 
   Future<void> setS5Messenger(S5Messenger s5messengerIn) async {
     s5messenger = s5messengerIn;
+    // Add listener so when you rename or change groups it'll refresh
+    _subscription =
+        s5messenger!.messengerState.stream.listen((_) => loadGroups(silent: true));
     emit(GroupsDrawerLoading());
     loadGroups();
   }
 
-  Future<void> loadGroups() async {
+  Future<void> loadGroups({bool silent = false}) async {
     if (s5messenger == null) return;
-    emit(GroupsDrawerLoading());
+    if (!silent) emit(GroupsDrawerLoading());
     try {
       final GroupInfoList groups =
           GroupInfo.fromJsonList(s5messenger!.groupsBox.values.toList());
@@ -62,8 +68,10 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
           groups.findByID(s5messenger!.messengerState.groupId ?? "");
       emit(GroupsDrawerLoaded(groups, currentGroup));
     } catch (e) {
-      logger.e(e);
-      emit(GroupsDrawerError(e.toString()));
+      if (!silent) {
+        logger.e(e);
+        emit(GroupsDrawerError(e.toString()));
+      }
     }
   }
 
@@ -104,7 +112,7 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     try {
       s5messenger!.group(groupId).rename(newName);
       locationService.sendRenameUpdate(groupId, newName);
-      loadGroups(); // Refresh the list
+      s5messenger!.messengerState.update();
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
     }
@@ -114,5 +122,11 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     if (s5messenger == null) return;
     s5messenger!.leaveGroup(s5messenger!.group(groupID));
     loadGroups();
+  }
+
+  @override
+  Future<void> close() {
+    _subscription?.cancel();
+    return super.close();
   }
 }
