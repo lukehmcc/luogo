@@ -157,15 +157,9 @@ class LocationService {
       final Uint8List messageEmbedBytes =
           MessageEmbed.fromPrefs(sendLoc, prefs, newName).toMsgpack();
 
-      if (s5messenger != null) {
-        await s5messenger!.group(groupID).sendMessage(
-              message ?? "Group renamed to $newName",
-              messageEmbedBytes,
-              myID!,
-              _uuid.v4(),
-            );
-        logger.d("sent group info update for group $groupID");
-      }
+      await _sendMessage(
+          groupID, message ?? "Group renamed to $newName", messageEmbedBytes);
+      logger.d("sent group info update for group $groupID");
     } catch (e) {
       logger.e('Error sending group info update: $e');
     }
@@ -277,7 +271,7 @@ class LocationService {
           coords: HiveLatLng(
               lat: messageEmbed.coordinates.latitude,
               long: messageEmbed.coordinates.longitude),
-          ts: DateTime.now().millisecondsSinceEpoch,
+          ts: messageEmbed.timestamp,
           name: messageEmbed.name,
           color: messageEmbed.color.toARGB32(),
         );
@@ -311,8 +305,7 @@ class LocationService {
       logger.d(
           "S5 is currently ${(await checkS5Online(s5messenger!.s5) ? "online" : "offline")}");
     }
-    final Uint8List messageEmbedBytes =
-        MessageEmbed.fromPrefs(latLng, prefs, null).toMsgpack();
+
     // Will run all the time, but won't actually do anything if s5Messenger isn't ready
     if (s5messenger != null) {
       for (final MapEntry<String, GroupState> group
@@ -320,16 +313,25 @@ class LocationService {
         GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
         // Now if the location should be shared, share the current location
         if (groupSettings.shareLocation == true && myID != null) {
-          // grab ID
-          await s5messenger!.group(group.key).sendMessage(
-                "location update",
-                messageEmbedBytes,
-                myID!,
-                _uuid.v4(),
-              );
-          logger.d("sent location");
+          final Uint8List messageEmbedBytes =
+              MessageEmbed.fromPrefs(latLng, prefs, null).toMsgpack();
+          await _sendMessage(group.key, "location update", messageEmbedBytes);
         }
       }
+    }
+  }
+
+  // A internal helper to centralize the logic of sending a message
+  Future<void> _sendMessage(
+      String groupID, String text, Uint8List embedBytes) async {
+    if (s5messenger != null && myID != null) {
+      await s5messenger!.group(groupID).sendMessage(
+            text,
+            embedBytes,
+            myID!,
+            _uuid.v4(),
+          );
+      logger.d("sent message to group $groupID: $text");
     }
   }
 

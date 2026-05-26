@@ -11,12 +11,14 @@ class MessageEmbed {
   final String name;
   final Color color;
   final String? newGroupName;
+  final int timestamp;
 
   MessageEmbed(
       {required this.coordinates,
       required this.name,
       required this.color,
-      this.newGroupName});
+      this.newGroupName,
+      required this.timestamp});
 
   // Serialize to MessagePack (Uint8List)
   Uint8List toMsgpack() {
@@ -25,6 +27,7 @@ class MessageEmbed {
       'name': name,
       'color': color.toARGB32(),
       'newGroupName': newGroupName,
+      'timestamp': timestamp,
     });
   }
 
@@ -38,6 +41,7 @@ class MessageEmbed {
       name: data['name'],
       color: Color(data['color'] ?? 0),
       newGroupName: data['newGroupName'],
+      timestamp: data['timestamp'] ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 
@@ -49,6 +53,7 @@ class MessageEmbed {
       name: prefs.getString('name') ?? "",
       color: Color(prefs.getInt('color') ?? 0),
       newGroupName: newGroupName,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
     );
   }
 }
