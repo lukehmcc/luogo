@@ -51,8 +51,16 @@ class GroupSheet extends StatelessWidget {
               BlocProvider.of<GroupSheetCubit>(context);
           return Column(
             children: <Widget>[
-              Text(groupSheetCubit.groupInfo.name,
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  groupSheetCubit.groupInfo.name,
+                  style: const TextStyle(
+                      fontSize: 30, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[

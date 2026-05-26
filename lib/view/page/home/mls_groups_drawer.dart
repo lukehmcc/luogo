@@ -38,7 +38,10 @@ class GroupsDrawer extends StatelessWidget {
                     style: AdaptiveStyle
                         .material, // cupertino has coloring issues so force material
                     textFields: [
-                      DialogTextField(hintText: 'New Group Name:'),
+                      DialogTextField(
+                        hintText: 'New Group Name:',
+                        maxLength: 32,
+                      ),
                     ],
                   );
                   if (res != null && res.isNotEmpty && context.mounted) {
@@ -147,7 +150,11 @@ class GroupListView extends StatelessWidget {
                   context.read<HomeCubit>().groupSelected(group); // Update UI
                   Navigator.pop(context); // Close drawer
                 },
-                title: Text(group.name),
+                title: Text(
+                  group.name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 subtitle: Text(context
                         .read<GroupsDrawerCubit>()
                         .getMemebersFromGroup(group.id) ??
@@ -183,6 +190,7 @@ class GroupListView extends StatelessWidget {
                           textFields: [
                             DialogTextField(
                               hintText: 'Edit Group Name',
+                              maxLength: 32,
                             ),
                           ],
                         );

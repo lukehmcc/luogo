@@ -117,10 +117,19 @@ class _MapOverlayContent extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.topCenter,
-                  child: Card(
-                    child: Padding(
-                      padding: EdgeInsetsGeometry.all(8),
-                      child: Text(groupInfo!.name),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                    ),
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsetsGeometry.all(8),
+                        child: Text(
+                          groupInfo!.name,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
                     ),
                   ),
                 ),
