@@ -143,8 +143,9 @@ class LocationService {
     }
   }
 
-  // When renaming a group, make sure to call this
-  Future<void> sendRenameUpdate(String groupID, String newName) async {
+  // When renaming a group or syncing info to a new member, call this
+  Future<void> sendGroupInfoUpdate(String groupID, String? newName,
+      {String? message}) async {
     try {
       GroupSettings groupSettings = GroupSettings.load(groupID, prefs);
       LatLng sendLoc = const LatLng(0, 0);
@@ -158,15 +159,15 @@ class LocationService {
 
       if (s5messenger != null) {
         await s5messenger!.group(groupID).sendMessage(
-              "Group renamed to $newName",
+              message ?? "Group renamed to $newName",
               messageEmbedBytes,
               myID!,
               _uuid.v4(),
             );
-        logger.d("sent group rename update for group $groupID to $newName");
+        logger.d("sent group info update for group $groupID");
       }
     } catch (e) {
-      logger.e('Error sending rename update: $e');
+      logger.e('Error sending group info update: $e');
     }
   }
 
@@ -188,25 +189,6 @@ class LocationService {
     final LatLng? loc = locationBox.get('local_position')?.toLatLng();
     if (loc != null) {
       _updatePeers(loc);
-    }
-  }
-
-  Future<void> _updatePeersForGroup(GroupState group) async {
-    if (myID == null) return;
-    GroupSettings groupSettings = GroupSettings.load(group.groupId, prefs);
-    if (groupSettings.shareLocation == true) {
-      final LatLng? loc = locationBox.get('local_position')?.toLatLng();
-      if (loc != null) {
-        final Uint8List messageEmbedBytes =
-            MessageEmbed.fromPrefs(loc, prefs, null).toMsgpack();
-        await group.sendMessage(
-          "location update",
-          messageEmbedBytes,
-          myID!,
-          _uuid.v4(),
-        );
-        logger.d("sent immediate location update to group ${group.groupId}");
-      }
     }
   }
 
@@ -264,7 +246,9 @@ class LocationService {
     // Listen for new members joining the group to immediately share our info with them
     final memberSub = group.membersStateNotifier.stream.listen((_) {
       logger.d("Members changed in group ${group.groupId}, sending update");
-      _updatePeersForGroup(group);
+      final groupData = s5messenger?.groupsBox.get(group.groupId);
+      sendGroupInfoUpdate(group.groupId, groupData?['name'],
+          message: "info update");
     });
 
     // Add the subscription to the set
@@ -305,9 +289,12 @@ class LocationService {
 
         // Then if there's a new group chat name, deal with that as well
         if (messageEmbed.newGroupName != null) {
-          logger.d("Renaming group to ${messageEmbed.newGroupName}");
-          group.rename(messageEmbed.newGroupName!);
-          s5messenger?.messengerState.update();
+          final groupData = s5messenger?.groupsBox.get(group.groupId);
+          if (groupData?['name'] != messageEmbed.newGroupName) {
+            logger.d("Renaming group to ${messageEmbed.newGroupName}");
+            group.rename(messageEmbed.newGroupName!);
+            s5messenger?.messengerState.update();
+          }
         }
       } else {
         logger.d("Message had no geo embed");

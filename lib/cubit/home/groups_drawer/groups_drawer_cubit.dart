@@ -111,7 +111,7 @@ class GroupsDrawerCubit extends Cubit<GroupsDrawerState> {
     if (s5messenger == null) return;
     try {
       s5messenger!.group(groupId).rename(newName);
-      locationService.sendRenameUpdate(groupId, newName);
+      locationService.sendGroupInfoUpdate(groupId, newName);
       s5messenger!.messengerState.update();
     } catch (e) {
       emit(GroupsDrawerError(e.toString()));
