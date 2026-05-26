@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=app.luogo.app">
-    <img src="https://github.com/pioug/google-play-badges/blob/main/svg/English.svg"
+    <img src="https://github.com/pioug/google-play-badges/blob/main/svg/en.svg"
          width="150"
          alt="Google Play badge">
   </a>
