@@ -39,8 +39,8 @@ class LocationService {
   late Box<HiveLatLng> locationBox;
   late Box<UserState> userStateBox;
   S5Messenger? s5messenger;
-  Map<String, StreamSubscription<dynamic>> groupListeners =
-      <String, StreamSubscription<dynamic>>{};
+  Map<String, List<StreamSubscription<dynamic>>> groupListeners =
+      <String, List<StreamSubscription<dynamic>>>{};
   final Uuid _uuid = Uuid();
   String? myID;
 
@@ -191,6 +191,25 @@ class LocationService {
     }
   }
 
+  Future<void> _updatePeersForGroup(GroupState group) async {
+    if (myID == null) return;
+    GroupSettings groupSettings = GroupSettings.load(group.groupId, prefs);
+    if (groupSettings.shareLocation == true) {
+      final LatLng? loc = locationBox.get('local_position')?.toLatLng();
+      if (loc != null) {
+        final Uint8List messageEmbedBytes =
+            MessageEmbed.fromPrefs(loc, prefs, null).toMsgpack();
+        await group.sendMessage(
+          "location update",
+          messageEmbedBytes,
+          myID!,
+          _uuid.v4(),
+        );
+        logger.d("sent immediate location update to group ${group.groupId}");
+      }
+    }
+  }
+
   Future<bool> askForLocationPermissions() async {
     logger.d("Requesting Location Permissions");
     LocationPermission permission = await Geolocator.requestPermission();
@@ -224,7 +243,11 @@ class LocationService {
     }
 
     // For safety, make sure to dispose of any previous listeners
-    groupListeners.forEach((_, sub) => sub.cancel());
+    groupListeners.forEach((_, subs) {
+      for (final sub in subs) {
+        sub.cancel();
+      }
+    });
     groupListeners.clear();
 
     // Set a listener for each group then start listening for updates of location
@@ -238,8 +261,14 @@ class LocationService {
   void setupListenToPeer(GroupState group) {
     logger.d("Listening for group ${group.groupId}");
 
+    // Listen for new members joining the group to immediately share our info with them
+    final memberSub = group.membersStateNotifier.stream.listen((_) {
+      logger.d("Members changed in group ${group.groupId}, sending update");
+      _updatePeersForGroup(group);
+    });
+
     // Add the subscription to the set
-    final subscription = group.messageListStateNotifier.stream.listen((_) {
+    final messageSub = group.messageListStateNotifier.stream.listen((_) {
       if (group.messagesMemory.isEmpty) {
         return;
       }
@@ -284,7 +313,7 @@ class LocationService {
         logger.d("Message had no geo embed");
       }
     });
-    groupListeners[group.groupId] = subscription;
+    groupListeners[group.groupId] = [memberSub, messageSub];
   }
 
   // On every location update, this guy'll check which groups are good to ping,
