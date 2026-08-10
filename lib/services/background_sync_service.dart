@@ -7,7 +7,7 @@ import 'package:luogo/services/location_service.dart';
 
 class BackgroundSyncService {
   @pragma('vm:entry-point')
-  static void backgroundFetchHeadlessTask(HeadlessEvent event) async {
+  static void backgroundFetchHeadlessTask(HeadlessTask event) async {
     String taskId = event.taskId;
     bool isTimeout = event.timeout;
     if (isTimeout) {
@@ -40,7 +40,6 @@ class BackgroundSyncService {
 
       locationService ??= await LocationService.initializeForBackground();
 
-      locationService.initializeGroupListeners();
       await locationService.sendLocationUpdateOneShot();
 
       // Give some time for incoming messages to be processed
