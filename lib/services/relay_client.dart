@@ -279,6 +279,23 @@ class RelayClient {
     return json ?? <String, dynamic>{};
   }
 
+  /// Cheap reachability probe used by the background task to fail fast when
+  /// the relay (or network) is down instead of burning its execution budget
+  /// on per-group connection timeouts.
+  Future<bool> isReachable() async {
+    try {
+      final HttpClientRequest request = await _http
+          .getUrl(_uri('/api/health'))
+          .timeout(const Duration(seconds: 2));
+      final HttpClientResponse response = await request.close();
+      await response.drain<void>();
+      return response.statusCode < 400;
+    } catch (e) {
+      logger.d("Relay not reachable: $e");
+      return false;
+    }
+  }
+
   // --- local cache ------------------------------------------------------
 
   // Last-known data is kept in the `relay-cache` Hive box so the UI keeps
@@ -397,9 +414,26 @@ class RelayClient {
 
   Future<void> leaveGroup(String groupId) async {
     await _request('POST', '/api/groups/$groupId/leave');
+    await purgeGroupLocal(groupId);
+  }
+
+  /// Owner-only: removes [userId] from [groupId]. The kicked member stops
+  /// receiving messages immediately (server-side) and cleans itself up when
+  /// its next request comes back 403.
+  Future<void> removeMember(String groupId, String userId) async {
+    await _request('POST', '/api/groups/$groupId/members/$userId/remove');
     _groups.removeWhere((g) => g.id == groupId);
     await _cacheGroups(_groups);
     await cacheBox.delete(_membersCacheKey(groupId));
+  }
+
+  /// Drops every local trace of a group: in-memory list, cached member list
+  /// and message cursor. Used when leaving or after being kicked (403).
+  Future<void> purgeGroupLocal(String groupId) async {
+    _groups.removeWhere((g) => g.id == groupId);
+    await _cacheGroups(_groups);
+    await cacheBox.delete(_membersCacheKey(groupId));
+    await cursorsBox.delete(groupId);
   }
 
   // --- invites & members ------------------------------------------------
@@ -455,7 +489,9 @@ class RelayClient {
   }
 
   /// Fetches messages newer than [afterSeq] (bounded by the server log).
-  Future<List<RelayMessage>> fetchMessagesAfter(
+  /// Returns the messages plus the server's current latest seq so callers
+  /// can detect cursor desync and paginate past the 500-message limit.
+  Future<({List<RelayMessage> messages, int latestSeq})> fetchMessagesAfter(
     String groupId,
     int afterSeq, {
     int limit = 500,
@@ -465,19 +501,42 @@ class RelayClient {
       '/api/groups/$groupId/messages',
       query: {'afterSeq': '$afterSeq', 'limit': '$limit'},
     );
-    return (body['messages'] as List<dynamic>? ?? [])
-        .map((e) => RelayMessage.fromJson(groupId, e as Map<String, dynamic>))
-        .toList();
+    return (
+      messages: (body['messages'] as List<dynamic>? ?? [])
+          .map((e) => RelayMessage.fromJson(groupId, e as Map<String, dynamic>))
+          .toList(),
+      latestSeq: (body['latestSeq'] as num?)?.toInt() ?? 0,
+    );
   }
 
   /// Pulls everything we've missed since our last cursor and emits it as
   /// RelayMessageEvents. Call this on connect/foreground to stay current.
+  ///
+  /// Handles two failure modes:
+  ///  - the server log was wiped/restored (latestSeq < cursor), which would
+  ///    otherwise make every message look "already seen" and deafen the
+  ///    client forever;
+  ///  - gaps larger than the 500-message fetch limit (paged until caught up).
   Future<void> resyncGroup(String groupId) async {
-    final int cursor = cursorsBox.get(groupId) ?? 0;
-    final List<RelayMessage> messages =
-        await fetchMessagesAfter(groupId, cursor);
-    for (final RelayMessage message in messages) {
-      _applyMessage(message);
+    int cursor = cursorsBox.get(groupId) ?? 0;
+    for (int attempt = 0; attempt < 10; attempt++) {
+      final ({List<RelayMessage> messages, int latestSeq}) result =
+          await fetchMessagesAfter(groupId, cursor);
+      // Server reset or pruned its log below our cursor: restart from 0.
+      if (result.latestSeq < cursor) {
+        logger.d("resync: server behind local cursor ($cursor), resetting");
+        cursor = 0;
+        await cursorsBox.put(groupId, 0);
+        continue;
+      }
+      for (final RelayMessage message in result.messages) {
+        _applyMessage(message);
+      }
+      cursor = cursorsBox.get(groupId) ?? cursor;
+      if (result.latestSeq <= cursor) {
+        return; // caught up
+      }
+      logger.d("resync: more to fetch (at seq $cursor of ${result.latestSeq})");
     }
   }
 
@@ -588,6 +647,8 @@ class RelayClient {
     _liveRunning = false;
     _ws?.sink.close();
   }
+
+  bool get isLiveRunning => _liveRunning;
 
   void dispose() {
     stopLive();

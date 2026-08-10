@@ -69,6 +69,28 @@ class GroupSheetCubit extends Cubit<GroupSheetState> {
     await GroupSettings.save(prefs, groupSettings);
   }
 
+  // Whether the current user can remove members (only the group owner can).
+  bool get isOwner {
+    for (final RelayGroup group in relayClient.groups) {
+      if (group.id == groupInfo.id) {
+        return group.ownerId == relayClient.userId;
+      }
+    }
+    return false;
+  }
+
+  // Owner-only kick. Returns true on success; the member list refreshes
+  // within the next poll cycle.
+  Future<bool> removeMember(RelayMember member) async {
+    try {
+      await relayClient.removeMember(groupInfo.id, member.id);
+      return true;
+    } catch (e) {
+      logger.e("Failed to remove member: $e");
+      return false;
+    }
+  }
+
   // Pass in the member id and get back information about the user to draw
   UserState? userStateFromId(String memberID) {
     final String yourID = relayClient.userId;

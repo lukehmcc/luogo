@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/services/background_sync_service.dart';
+import 'package:luogo/services/location_service.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/view/page/init_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -40,8 +44,43 @@ void main() async {
 }
 
 /// Top level Luogo function that defines the material app
-class Luogo extends StatelessWidget {
+class Luogo extends StatefulWidget {
   const Luogo({super.key});
+
+  @override
+  State<Luogo> createState() => _LuogoState();
+}
+
+class _LuogoState extends State<Luogo> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // A suspended iOS app misses WebSocket pushes while the socket can still
+    // look connected; catch up on anything we missed when we come back.
+    try {
+      final LocationService locationService = GetIt.I<LocationService>();
+      final RelayClient? relay = locationService.relayClient;
+      if (relay == null) return;
+      if (!relay.isLiveRunning) {
+        relay.startLive();
+      }
+      unawaited(relay.resyncAll());
+    } catch (e) {
+      logger.e("Resume resync failed: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

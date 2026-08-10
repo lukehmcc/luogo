@@ -49,6 +49,11 @@ class GroupCrypto {
 
   bool hasKey(String groupId) => _keyFor(groupId) != null;
 
+  /// Forgets a group key locally (leave / kicked).
+  Future<void> deleteKey(String groupId) async {
+    await keysBox.delete(groupId);
+  }
+
   /// Encrypts a JSON map payload for a group.
   Future<Uint8List> encrypt(String groupId, Map<String, dynamic> payload) {
     return _encryptWithKey(_keyFor(groupId), payload);

@@ -1,10 +1,13 @@
 import 'dart:io';
 
+import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:luogo/cubit/home/settings/settings_cubit.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/services/location_service.dart';
 import 'package:luogo/view/widgets/file_viewer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -85,12 +88,120 @@ class SettingsPage extends StatelessWidget {
                         }
                       },
                       child: Text("Logs")),
+                  _BackgroundStatusSection(),
                   Text(BlocProvider.of<SettingsCubit>(context).version),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Shows whether background location sync is allowed and when it last ran,
+/// plus a manual "send now" trigger for testing.
+class _BackgroundStatusSection extends StatefulWidget {
+  const _BackgroundStatusSection();
+
+  @override
+  State<_BackgroundStatusSection> createState() =>
+      _BackgroundStatusSectionState();
+}
+
+class _BackgroundStatusSectionState extends State<_BackgroundStatusSection> {
+  int _fetchStatus = -1; // -1 = unknown
+  String? _lastSync;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final SettingsCubit cubit = context.read<SettingsCubit>();
+    int status = -1;
+    try {
+      status = await BackgroundFetch.status;
+    } catch (e) {
+      logger.e("BackgroundFetch.status failed: $e");
+    }
+    if (!mounted) return;
+    setState(() {
+      _fetchStatus = status;
+      _lastSync = cubit.prefs.getString('last-background-sync');
+    });
+  }
+
+  String _statusLabel(int status) {
+    switch (status) {
+      case 2:
+        return "Authorized";
+      case 1:
+        return "Denied";
+      case 0:
+        return "Restricted";
+      default:
+        return "Unknown";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String statusText = _fetchStatus == -1
+        ? "Unknown"
+        : _statusLabel(_fetchStatus);
+    final String lastSyncText = (_lastSync == null || _lastSync!.isEmpty)
+        ? "Never"
+        : _lastSync!.replaceFirst('T', ' ').replaceFirst(RegExp(r'\..*'), '');
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Background sync',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              leading: const Icon(Icons.schedule),
+              title: const Text('OS task status'),
+              subtitle: Text(statusText),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              leading: const Icon(Icons.history),
+              title: const Text('Last background sync'),
+              subtitle: Text(lastSyncText),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.location_on),
+              label: const Text("Send location now"),
+              onPressed: () async {
+                final LocationService locationService =
+                    GetIt.I<LocationService>();
+                try {
+                  await locationService.sendLocationUpdateOneShot();
+                  await _refresh();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text("Location sent")));
+                } catch (e) {
+                  logger.e("One-shot location send failed: $e");
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Failed to send location")));
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

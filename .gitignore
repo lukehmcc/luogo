@@ -48,3 +48,4 @@ app.*.map.json
 data
 TODO.md
 opencode.json
+android/build/

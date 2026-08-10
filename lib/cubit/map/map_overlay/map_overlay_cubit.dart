@@ -34,6 +34,17 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   final Map<String, StreamSubscription<dynamic>> _activeListeners = {};
   final Map<String, Symbol> _activeSymbols = {};
 
+  // How old a peer's last update can be before their pin is dimmed.
+  static const Duration stalePinThreshold = Duration(minutes: 15);
+
+  // Pins older than [stalePinThreshold] get faded so "they haven't updated
+  // in a while" is visible at a glance.
+  double _pinOpacity(UserState userState) {
+    final int age =
+        DateTime.now().millisecondsSinceEpoch - userState.ts;
+    return age > stalePinThreshold.inMilliseconds ? 0.35 : 1.0;
+  }
+
   // Opens the QR invite scanner so the user can join a group
   void qrButtonPressed() {
     emit(MapOverlayScannerPopupPressed());
@@ -134,6 +145,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
             iconImage: "pin-drop-$memberID",
             iconSize: 1.0,
             iconAnchor: 'bottom',
+            iconOpacity: _pinOpacity(userState),
           ),
         );
         _activeSymbols[memberID] = userSymbol;
@@ -162,13 +174,16 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
                 geometry: userState.coords.toLatLng(),
                 iconImage: "pin-drop-$memberID",
                 iconSize: 1.0,
-                iconAnchor: 'bottom'));
+                iconAnchor: 'bottom',
+                iconOpacity: _pinOpacity(userState)));
             _activeSymbols[memberID] = userSymbol;
             symbolIDMap[userSymbol.id] = memberID;
             // If it's not null, update it's location
           } else {
             controller.updateSymbol(_activeSymbols[memberID]!,
-                SymbolOptions(geometry: userState.coords.toLatLng()));
+                SymbolOptions(
+                    geometry: userState.coords.toLatLng(),
+                    iconOpacity: _pinOpacity(userState)));
           }
         }
       });

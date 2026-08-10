@@ -111,9 +111,10 @@ class GroupSheet extends StatelessWidget {
                   return ListView(
                     children: members.map<Widget>((RelayMember member) {
                       // define this first because will be used multiple times
+                      final GroupSheetCubit groupSheetCubit =
+                          BlocProvider.of<GroupSheetCubit>(context);
                       final UserState? userState =
-                          BlocProvider.of<GroupSheetCubit>(context)
-                              .userStateFromId(member.id);
+                          groupSheetCubit.userStateFromId(member.id);
                       if (userState == null) {
                         return Container();
                       }
@@ -125,6 +126,15 @@ class GroupSheet extends StatelessWidget {
                         title: Text(
                           userState.name,
                         ),
+                        trailing: groupSheetCubit.isOwner &&
+                                member.id != relayClient.userId
+                            ? IconButton(
+                                icon: const Icon(Icons.person_remove_outlined),
+                                tooltip: "Remove ${userState.name}",
+                                onPressed: () => _confirmRemoveMember(
+                                    context, groupSheetCubit, member),
+                              )
+                            : null,
                       );
                     }).toList(),
                   );
@@ -135,5 +145,35 @@ class GroupSheet extends StatelessWidget {
         },
       ),
     );
+  }
+
+  // Owner-only kick with confirmation.
+  Future<void> _confirmRemoveMember(BuildContext context,
+      GroupSheetCubit cubit, RelayMember member) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text("Remove member"),
+        content: Text(
+            "Remove ${member.name.isEmpty ? 'this member' : member.name} from the group?\n\n"
+            "They'll stop receiving location updates immediately."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final bool success = await cubit.removeMember(member);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(success ? "Member removed" : "Failed to remove member"),
+    ));
   }
 }

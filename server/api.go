@@ -4,20 +4,85 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 const maxBodyBytes = 1 << 20
 
+// Rate limit budgets. Generous enough for the app's real traffic (a 1-min
+// foreground ping per group, a ~15-min background fetch, a 5s member poll
+// while the sheet is open) while still bounding abuse.
+const (
+	messagesPerMinute  = 60
+	groupsPerMinute    = 30
+	invitesPerMinute   = 10
+	readsPerMinute     = 120
+	registrationsPerIP = 10 // per hour
+)
+
+// rateLimiter is a minimal sliding-window counter, safe for concurrent use.
+// Entries are pruned lazily once the map grows past a threshold.
+type rateLimiter struct {
+	mu     sync.Mutex
+	limit  int
+	window time.Duration
+	usage  map[string]*windowState
+}
+
+type windowState struct {
+	start time.Time
+	count int
+}
+
+func newRateLimiter(limit int, window time.Duration) *rateLimiter {
+	return &rateLimiter{
+		limit:  limit,
+		window: window,
+		usage:  make(map[string]*windowState),
+	}
+}
+
+func (rl *rateLimiter) allow(key string, now time.Time) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	st := rl.usage[key]
+	if st == nil || now.Sub(st.start) >= rl.window {
+		st = &windowState{start: now}
+		rl.usage[key] = st
+	}
+	st.count++
+	if len(rl.usage) > 4096 {
+		rl.prune(now)
+	}
+	return st.count <= rl.limit
+}
+
+func (rl *rateLimiter) prune(now time.Time) {
+	for key, st := range rl.usage {
+		if now.Sub(st.start) >= rl.window {
+			delete(rl.usage, key)
+		}
+	}
+}
+
 type Server struct {
 	store  *Store
 	hub    *Hub
 	ws     *websocket.Upgrader
 	maxLog int
+
+	msgLimiter    *rateLimiter // POST /messages per user
+	groupLimiter  *rateLimiter // POST /groups per user
+	inviteLimiter *rateLimiter // POST /invites per user
+	readLimiter   *rateLimiter // GETs per user
+	ipLimiter     *rateLimiter // per-IP budget (registration)
 }
 
 func NewServer(store *Store, hub *Hub, maxLog int) *Server {
@@ -30,6 +95,11 @@ func NewServer(store *Store, hub *Hub, maxLog int) *Server {
 			WriteBufferSize: 1024,
 			CheckOrigin:     func(*http.Request) bool { return true },
 		},
+		msgLimiter:    newRateLimiter(messagesPerMinute, time.Minute),
+		groupLimiter:  newRateLimiter(groupsPerMinute, time.Minute),
+		inviteLimiter: newRateLimiter(invitesPerMinute, time.Minute),
+		readLimiter:   newRateLimiter(readsPerMinute, time.Minute),
+		ipLimiter:     newRateLimiter(registrationsPerIP, time.Hour),
 	}
 }
 
@@ -46,6 +116,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/groups/{id}", s.withAuth(s.handleGetGroup))
 	mux.HandleFunc("PATCH /api/groups/{id}", s.withAuth(s.handleRenameGroup))
 	mux.HandleFunc("POST /api/groups/{id}/leave", s.withAuth(s.handleLeaveGroup))
+	mux.HandleFunc("POST /api/groups/{id}/members/{userId}/remove", s.withAuth(s.handleRemoveMember))
 	mux.HandleFunc("POST /api/groups/{id}/invites", s.withAuth(s.handleCreateInvite))
 	mux.HandleFunc("POST /api/groups/{id}/join", s.withAuth(s.handleJoinGroup))
 	mux.HandleFunc("GET /api/groups/{id}/members", s.withAuth(s.handleListMembers))
@@ -80,6 +151,28 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeErr(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+// rateLimit enforces a limiter budget for key. Returns false (after writing
+// a 429) when the budget is exhausted.
+func rateLimit(w http.ResponseWriter, rl *rateLimiter, key string) bool {
+	if rl.allow(key, time.Now()) {
+		return true
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(int(rl.window.Seconds())))
+	writeErr(w, http.StatusTooManyRequests, "rate limit exceeded, slow down")
+	return false
+}
+
+// clientIP extracts the caller's IP from RemoteAddr. The relay is meant to
+// be deployed behind TLS directly or a trusted proxy; proxy header handling
+// can be added when there is a deployment that needs it.
+func clientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 func readJSON(r *http.Request, v any) error {
@@ -160,6 +253,9 @@ type createUserReq struct {
 }
 
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+	if !rateLimit(w, s.ipLimiter, clientIP(r)) {
+		return
+	}
 	var req createUserReq
 	if err := readJSON(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid request body")
@@ -208,6 +304,9 @@ type createGroupReq struct {
 }
 
 func (s *Server) handleCreateGroup(w http.ResponseWriter, r *http.Request, user User) {
+	if !rateLimit(w, s.groupLimiter, user.ID) {
+		return
+	}
 	var req createGroupReq
 	if err := readJSON(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid request body")
@@ -287,7 +386,38 @@ func (s *Server) handleLeaveGroup(w http.ResponseWriter, r *http.Request, user U
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+func (s *Server) handleRemoveMember(w http.ResponseWriter, r *http.Request, user User) {
+	group, ok := s.requireMember(w, r.PathValue("id"), user)
+	if !ok {
+		return
+	}
+	targetID := r.PathValue("userId")
+	if targetID == user.ID {
+		writeErr(w, http.StatusBadRequest, "cannot remove yourself, use leave instead")
+		return
+	}
+	if group.OwnerID != user.ID {
+		writeErr(w, http.StatusForbidden, "only the group owner can remove members")
+		return
+	}
+	if !rateLimit(w, s.groupLimiter, user.ID) {
+		return
+	}
+	if err := s.store.RemoveMember(group.ID, targetID); err != nil {
+		log.Printf("remove member error: %v", err)
+		writeErr(w, http.StatusInternalServerError, "remove member error")
+		return
+	}
+	s.hub.broadcast(group.ID, map[string]any{
+		"type": "member", "groupId": group.ID, "action": "left", "userId": targetID,
+	})
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func (s *Server) handleCreateInvite(w http.ResponseWriter, r *http.Request, user User) {
+	if !rateLimit(w, s.inviteLimiter, user.ID) {
+		return
+	}
 	group, ok := s.requireMember(w, r.PathValue("id"), user)
 	if !ok {
 		return
@@ -343,6 +473,9 @@ func (s *Server) handleJoinGroup(w http.ResponseWriter, r *http.Request, user Us
 }
 
 func (s *Server) handleListMembers(w http.ResponseWriter, r *http.Request, user User) {
+	if !rateLimit(w, s.readLimiter, user.ID) {
+		return
+	}
 	if _, ok := s.requireMember(w, r.PathValue("id"), user); !ok {
 		return
 	}
@@ -356,6 +489,9 @@ func (s *Server) handleListMembers(w http.ResponseWriter, r *http.Request, user 
 }
 
 func (s *Server) handleGetMessages(w http.ResponseWriter, r *http.Request, user User) {
+	if !rateLimit(w, s.readLimiter, user.ID) {
+		return
+	}
 	group, ok := s.requireMember(w, r.PathValue("id"), user)
 	if !ok {
 		return
@@ -395,6 +531,9 @@ type sendMessageReq struct {
 }
 
 func (s *Server) handleSendMessage(w http.ResponseWriter, r *http.Request, user User) {
+	if !rateLimit(w, s.msgLimiter, user.ID) {
+		return
+	}
 	group, ok := s.requireMember(w, r.PathValue("id"), user)
 	if !ok {
 		return

@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/services/relay_client.dart';
 
 class BackgroundSyncService {
   @pragma('vm:entry-point')
@@ -40,11 +41,28 @@ class BackgroundSyncService {
 
       locationService ??= await LocationService.initializeForBackground();
 
+      // Fail fast when the relay (or network) is down: burning the iOS ~30s
+      // budget on per-group connection timeouts gets future fetch grants
+      // throttled by the OS.
+      final RelayClient? relay = locationService.relayClient;
+      if (relay == null || !await relay.isReachable()) {
+        logger.w("[BackgroundFetch] Relay unreachable, skipping sync");
+        return;
+      }
+
       await locationService.sendLocationUpdateOneShot();
 
-      // Give some time for incoming messages to be processed
-      // On iOS we have about 30 seconds total, on Android it's more flexible
-      await Future.delayed(const Duration(seconds: 15));
+      // Give incoming-message listeners a moment to finish. Keep it short:
+      // iOS grants roughly 30s per task and overrunning throttles us.
+      await Future.delayed(const Duration(seconds: 3));
+
+      // Remember the last successful sync so the settings screen can show it.
+      try {
+        await locationService.prefs
+            .setString('last-background-sync', DateTime.now().toIso8601String());
+      } catch (e) {
+        logger.e("Failed to record background sync time: $e");
+      }
 
       logger.i("Background sync completed successfully");
     } catch (e) {

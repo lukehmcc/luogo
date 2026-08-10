@@ -293,3 +293,82 @@ func TestNonMemberBlocked(t *testing.T) {
 		t.Fatalf("expected 403 for non-member read, got %d", code)
 	}
 }
+
+func TestRateLimitMessages(t *testing.T) {
+	env := newTestEnv(t)
+	alice := env.server()
+	alice.register("alice", 0)
+	g := alice.createGroup("g")
+
+	// The budget is messagesPerMinute per user; the next one gets a 429.
+	for i := 0; i < messagesPerMinute; i++ {
+		if code := alice.rawDo(http.MethodPost, "/api/groups/"+g.ID+"/messages",
+			map[string]any{"ciphertext": "x"}); code != http.StatusCreated {
+			t.Fatalf("message %d: expected 201, got %d", i, code)
+		}
+	}
+	if code := alice.rawDo(http.MethodPost, "/api/groups/"+g.ID+"/messages",
+		map[string]any{"ciphertext": "x"}); code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", code)
+	}
+}
+
+func TestRateLimitRegistration(t *testing.T) {
+	env := newTestEnv(t)
+	c := env.server()
+	// registrationsPerIP allowed per IP; the next one gets a 429.
+	for i := 0; i < registrationsPerIP; i++ {
+		c.register("u", 0)
+	}
+	if code := c.rawDo(http.MethodPost, "/api/users",
+		map[string]any{"name": "u", "color": 0, "publicKey": "pk"}); code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", code)
+	}
+}
+
+func TestRemoveMemberOwnerOnly(t *testing.T) {
+	env := newTestEnv(t)
+	alice := env.server()
+	alice.register("alice", 0)
+	g := alice.createGroup("g")
+	inv := alice.do(http.MethodPost, "/api/groups/"+g.ID+"/invites", map[string]any{})
+	tok, _ := inv["inviteToken"].(string)
+	if tok == "" {
+		t.Fatalf("no invite token: %v", inv)
+	}
+
+	bob := env.server()
+	bob.register("bob", 0)
+	bob.do(http.MethodPost, "/api/groups/"+g.ID+"/join", map[string]any{"inviteToken": tok})
+
+	// A non-owner can't kick.
+	if code := bob.rawDo(http.MethodPost,
+		"/api/groups/"+g.ID+"/members/"+alice.user.ID+"/remove",
+		map[string]any{}); code != http.StatusForbidden {
+		t.Fatalf("non-owner kick: expected 403, got %d", code)
+	}
+
+	// The owner can't kick themselves.
+	if code := alice.rawDo(http.MethodPost,
+		"/api/groups/"+g.ID+"/members/"+alice.user.ID+"/remove",
+		map[string]any{}); code != http.StatusBadRequest {
+		t.Fatalf("self-remove: expected 400, got %d", code)
+	}
+
+	// The owner kicks Bob.
+	if code := alice.rawDo(http.MethodPost,
+		"/api/groups/"+g.ID+"/members/"+bob.user.ID+"/remove",
+		map[string]any{}); code != http.StatusOK {
+		t.Fatalf("owner kick: expected 200, got %d", code)
+	}
+
+	// Kicked user loses access immediately.
+	if code := bob.rawDo(http.MethodGet, "/api/groups/"+g.ID+"/messages?afterSeq=0",
+		nil); code != http.StatusForbidden {
+		t.Fatalf("kicked member read: expected 403, got %d", code)
+	}
+	if code := bob.rawDo(http.MethodPost, "/api/groups/"+g.ID+"/messages",
+		map[string]any{"ciphertext": "x"}); code != http.StatusForbidden {
+		t.Fatalf("kicked member send: expected 403, got %d", code)
+	}
+}

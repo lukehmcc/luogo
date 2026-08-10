@@ -108,7 +108,10 @@ class LocationService {
     }
 
     try {
-      final Position position = await Geolocator.getCurrentPosition();
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings:
+            LocationSettings(timeLimit: const Duration(seconds: 10)),
+      );
       final LatLng latLng = LatLng(position.latitude, position.longitude);
       logger.d("Attempting to update peers");
       await _updatePeers(latLng);
@@ -121,7 +124,10 @@ class LocationService {
   // Internal location fetcher for oneshots
   Future<void> _fetchLocation() async {
     try {
-      final Position position = await Geolocator.getCurrentPosition();
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings:
+            LocationSettings(timeLimit: const Duration(seconds: 10)),
+      );
       final LatLng latLng = LatLng(position.latitude, position.longitude);
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
       logger.d("Local Position: ${latLng.longitude}, ${latLng.latitude}");
@@ -201,6 +207,13 @@ class LocationService {
       return;
     }
     // Update the user's location
+    final UserState? existing = userStateBox.get(message.senderId);
+    // Out-of-order delivery (live vs resync) can surface an old message
+    // after a newer one; never regress a fresher pin.
+    if (existing != null && messageEmbed.timestamp <= existing.ts) {
+      logger.d("Ignoring stale location update from ${message.senderId}");
+      return;
+    }
     final UserState newUserState = UserState(
       coords: HiveLatLng(
           lat: messageEmbed.coordinates.latitude,
@@ -242,6 +255,13 @@ class LocationService {
           logger.d("sent location (seq ${acked.seq})");
         } catch (e) {
           logger.e("Failed to send location to ${group.id}: $e");
+          // We're no longer a member (kicked/left on another device): stop
+          // hammering the relay and drop every local trace of the group.
+          if (e is RelayException && e.statusCode == 403) {
+            logger.d("No longer in group ${group.id}, purging locally");
+            await relay.purgeGroupLocal(group.id);
+            await groupCrypto.deleteKey(group.id);
+          }
         }
       }
     }
