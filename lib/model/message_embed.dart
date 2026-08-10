@@ -13,12 +13,14 @@ class MessageEmbed {
   final String name;
   final Color color;
   final String? newGroupName;
+  final int timestamp;
 
   MessageEmbed({
     required this.coordinates,
     required this.name,
     required this.color,
     this.newGroupName,
+    required this.timestamp,
   });
 
   Map<String, dynamic> toJson() => {
@@ -26,6 +28,7 @@ class MessageEmbed {
         'name': name,
         'color': color.toARGB32(),
         'newGroupName': newGroupName,
+        'timestamp': timestamp,
       };
 
   factory MessageEmbed.fromJson(Map<String, dynamic> data) {
@@ -35,6 +38,8 @@ class MessageEmbed {
       name: data['name'] as String? ?? "",
       color: Color(data['color'] as int? ?? 0),
       newGroupName: data['newGroupName'] as String?,
+      timestamp:
+          data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch,
     );
   }
 
@@ -46,6 +51,7 @@ class MessageEmbed {
       name: prefs.getString('name') ?? "",
       color: Color(prefs.getInt('color') ?? 0),
       newGroupName: newGroupName,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
     );
   }
 

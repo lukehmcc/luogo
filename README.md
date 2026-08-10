@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=app.luogo.app">
-    <img src="https://github.com/pioug/google-play-badges/blob/main/svg/English.svg"
+    <img src="https://github.com/pioug/google-play-badges/blob/main/svg/en.svg"
          width="150"
          alt="Google Play badge">
   </a>
@@ -46,11 +46,7 @@
 
 - **One Time Send:** If you just want someone to have your location once, just send it with the one time button! No need to constantly send updates.
 
-## Getting Started
-
-**In Beta Period**: For now the best way to try the app is to go to the [Releases](https://github.com/lukehmcc/luogo/releases) page and download the Android APK file. This will be updated when the app gets pushed to the App/Play Stores.
-
-### Development
+## Development
 
 To get started with local development do the following:
 

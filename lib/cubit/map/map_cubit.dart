@@ -34,7 +34,13 @@ class MapCubit extends Cubit<MapState> {
     required this.locationService,
     required this.prefs,
   }) : super(MapInitial()) {
-    // Initialize the position watcher
+    // 1. Try to load initial position from Hive
+    final initialPos = locationService.locationBox.get('local_position');
+    if (initialPos != null) {
+      _userPosition = initialPos.toLatLng();
+    }
+
+    // 2. Initialize the position watcher
     locationService.locationBox
         .watch(key: 'local_position')
         .listen((event) async {
@@ -42,39 +48,42 @@ class MapCubit extends Cubit<MapState> {
       if (event.value == null) {
         return;
       }
-      // First check if the user is centered
-      final CameraPosition? cameraPosition =
-          (await mapController.future).cameraPosition;
+      final LatLng newPosition = event.value.toLatLng();
+
+      // Check if the user is currently centered
+      final controller = await mapController.future;
+      final CameraPosition? cameraPosition = controller.cameraPosition;
       final double camLat = cameraPosition?.target.latitude ?? 0;
       final double camLong = cameraPosition?.target.longitude ?? 0;
       final double userLat = _userPosition?.latitude ?? 0;
       final double userLong = _userPosition?.longitude ?? 0;
+
+      // We consider it centered if it's very close to the PREVIOUS user position
+      // or if it's still at the default (1,1)
       bool isCentered = (userLat - camLat).abs() < 0.0001 &&
           (userLong - camLong).abs() < 0.0001;
 
-      // Also check if it is the first time a location is being written (always want to center then)
-      bool firstGo = _userPosition == null;
+      bool isAtDefault = (camLat - 1.0).abs() < 0.0001 &&
+          (camLong - 1.0).abs() < 0.0001;
 
-      // Then update the user position
-      if (event.value != null) {
-        _userPosition = event.value.toLatLng();
-      }
+      // Also check if it is the first time a location is being written in this session
+      bool firstGo = _userSymbol == null;
 
-      // If it's the first go, add the user symbol (it should always be there)
+      // Update the user position
+      _userPosition = newPosition;
+
+      // If it's the first go, add the user symbol
       if (firstGo) {
         _addUserIcon();
       }
 
-      // And if the position hasn't been editied of the camera, move it
-      if (isCentered || firstGo) {
-        // update the camera position
-        updateCamera(event.value.toLatLng());
+      // Move camera if it was already centered, at default, or it's the first lock
+      if (isCentered || isAtDefault || firstGo) {
+        updateCamera(newPosition);
       }
 
-      // But always move the pin if there's a valid location
+      // Always move the pin if it exists
       if (_userSymbol != null) {
-        // And update the pin location
-        final controller = await mapController.future;
         controller.updateSymbol(
             _userSymbol!, SymbolOptions(geometry: _userPosition));
       }
@@ -136,7 +145,6 @@ class MapCubit extends Cubit<MapState> {
       final controller = await mapController.future;
       await addImageFromAsset(controller, "pin-drop", "assets/pin.png",
           selectedColor, name?[0] ?? "");
-      await Future.delayed(Duration(seconds: 1));
       //Now go through and put it on the map
       _userSymbol = await controller.addSymbol(SymbolOptions(
           geometry: _userPosition,

@@ -64,6 +64,7 @@ class MapView extends StatelessWidget {
         // This section reacts to state to draw the main page
         child: BlocBuilder<MapCubit, MapState>(
           builder: (context, state) {
+            final lastPos = context.read<MapCubit>().userPosition;
             return SafeArea(
               top: false,
               child: Stack(
@@ -71,8 +72,8 @@ class MapView extends StatelessWidget {
                   MapLibreMap(
                     onMapCreated: (controller) =>
                         context.read<MapCubit>().mapCreated(controller),
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(1, 1),
+                    initialCameraPosition: CameraPosition(
+                      target: lastPos ?? const LatLng(1, 1),
                       zoom: 10.0,
                     ),
                     trackCameraPosition: true,

@@ -205,7 +205,7 @@ class LocationService {
       coords: HiveLatLng(
           lat: messageEmbed.coordinates.latitude,
           long: messageEmbed.coordinates.longitude),
-      ts: DateTime.now().millisecondsSinceEpoch,
+      ts: messageEmbed.timestamp,
       name: messageEmbed.name,
       color: messageEmbed.color.toARGB32(),
     );
