@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:intl/intl.dart';
@@ -10,24 +11,20 @@ import 'package:luogo/model/group_settings.dart';
 import 'package:luogo/model/hive_latlng.dart';
 import 'package:luogo/model/message_embed.dart';
 import 'package:luogo/model/user_state.dart';
-import 'package:luogo/utils/check_s5_connectivity.dart';
-import 'package:luogo/utils/s5_logger.dart';
+import 'package:luogo/services/group_crypto.dart';
+import 'package:luogo/services/relay_client.dart';
+import 'package:luogo/services/relay_setup.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:s5/s5.dart';
-import 'package:s5_messenger/s5_messenger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
 
-/// A service for periodically fetching and storing the device's current location.
+/// A service for periodically fetching the device's current location and
+/// routing it to group members through the relay.
 ///
-/// ## Usage
-/// ```dart
-/// final locationService = LocationService();
-/// await locationService.startPeriodicUpdates(intervalSeconds: 10);
-/// // Remember to call dispose() when done
-/// ```
+/// Outgoing positions are encrypted end-to-end with the per-group key
+/// ([GroupCrypto]); incoming relay messages are decrypted and written to
+/// [userStateBox], which the UI watches for live map pins.
 class LocationService {
   // Passed in vars
   final SharedPreferencesWithCache prefs;
@@ -38,13 +35,12 @@ class LocationService {
   Timer? _timer;
   late Box<HiveLatLng> locationBox;
   late Box<UserState> userStateBox;
-  S5Messenger? s5messenger;
-  Map<String, StreamSubscription<dynamic>> groupListeners =
-      <String, StreamSubscription<dynamic>>{};
-  final Uuid _uuid = Uuid();
+  RelayClient? relayClient;
+  GroupCrypto? crypto;
+  StreamSubscription<RelayEvent>? _relaySubscription;
   String? myID;
 
-  // Inits the locaiton service
+  // Inits the location service
   Future<void> init() async {
     locationBox = await Hive.openBox<HiveLatLng>('location');
     userStateBox = await Hive.openBox<UserState>('userState');
@@ -52,7 +48,6 @@ class LocationService {
 
   /// Call this to start periodic location updates.
   /// Currently using live updates, not the intervals
-  /// Returns false if fails or true if sucsess
   Future<bool> startPeriodicUpdates({int intervalSeconds = 5}) async {
     // Check permissions first
     bool hasPermission = await checkLocationPermissions();
@@ -61,7 +56,7 @@ class LocationService {
       return false;
     }
 
-    // To not flood the channel with messages, just ping every minuet
+    // To not flood the channel with messages, just ping every minute
     LatLng? lastSentPosition;
     _timer = Timer.periodic(Duration(minutes: 1), (timer) async {
       if (lastSentPosition != null) {
@@ -79,40 +74,25 @@ class LocationService {
   }
 
   // static initializer for the background task
+  // Lightweight: no native/runtime init, just prefs + Hive + a relay client.
   static Future<LocationService> initializeForBackground() async {
-    // Initialize dependencies just like in MainCubit
     final prefs = await SharedPreferencesWithCache.create(
         cacheOptions: SharedPreferencesWithCacheOptions());
 
-    await RustLib.init();
     final Directory dir = await getApplicationSupportDirectory();
-    Hive
-      ..init(path.join(dir.path, 'hive'))
-      ..registerAdapters();
+    Hive.init(path.join(dir.path, 'hive'));
+    // The app isolate may have registered these already; registering twice
+    // throws, so only do it when needed.
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapters();
+    }
 
     final service = LocationService(prefs: prefs);
-
     service.locationBox = await Hive.openBox<HiveLatLng>('location');
     service.userStateBox = await Hive.openBox<UserState>('userState');
 
-    final s5 = await S5.create(
-      initialPeers: [
-        prefs.getString('s5-node') ?? '', // put the users s5 node first
-        'wss://z2DeVYsXdq3Rgt8252LRwNnreAtsGr3BN6FPc6Hvg6dTtRk@s5.jptr.tech/s5/p2p',
-        'wss://z2Das8aEF7oNoxkcrfvzerZ1iBPWfm6D7gy3hVE4ALGSpVB@node.sfive.net/s5/p2p',
-        'wss://z2DdbxV4xyoqWck5pXXJdVzRnwQC6Gbv6o7xDvyZvzKUfuj@s5.vup.dev/s5/p2p',
-        'wss://z2DWuWNZcdSyZLpXFK2uCU3haaWMXrDAgxzv17sDEMHstZb@s5.garden/s5/p2p',
-      ],
-      logger: SilentLogger(),
-      persistFilePath: path.join(
-          (await getApplicationDocumentsDirectory()).path, 'persist.json'),
-    );
-    final s5messenger = S5Messenger();
-    await s5messenger.init(
-        s5,
-        path.join((await getApplicationDocumentsDirectory()).path,
-            'keystore.sqlite'));
-    service.setS5Messenger(s5messenger);
+    final relaySetup = await initRelayAndCrypto(prefs);
+    service.setRelayClient(relaySetup.relay, relaySetup.crypto);
 
     return service;
   }
@@ -138,36 +118,6 @@ class LocationService {
     }
   }
 
-  // When renaming a group, make sure to call this
-  // TODO: Finish implementing oneshot renames
-  Future<void> sendRenameUpdate(String groupID, String newName) async {
-    // try {
-    //   final LatLng currentLoc = locationBox.get('local_position')?.toLatLng();
-    //   final Uint8List messageEmbedBytes =
-    //       MessageEmbed.fromPrefs(c, prefs, null).toMsgpack();
-    //   // Will run all the time, but won't actually do anything if s5Messenger isn't ready
-    //   if (s5messenger != null) {
-    //     for (final MapEntry<String, GroupState> group
-    //         in s5messenger!.groups.entries) {
-    //       GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
-    //       // Now if the location should be shared, share the current location
-    //       if (groupSettings.shareLocation == true && myID != null) {
-    //         // grab ID
-    //         s5messenger!.group(group.key).sendMessage(
-    //               "location update",
-    //               messageEmbedBytes,
-    //               myID!,
-    //               _uuid.v4(),
-    //             );
-    //         logger.d("sent location");
-    //       }
-    //     }
-    //   }
-    // } catch (e) {
-    //   logger.e('Error fetching/sending location in background: $e');
-    // }
-  }
-
   // Internal location fetcher for oneshots
   Future<void> _fetchLocation() async {
     try {
@@ -183,7 +133,6 @@ class LocationService {
   // Checks & ensures permissions are granted
   // returns true if position granted
   Future<bool> checkLocationPermissions() async {
-    // Check current permission status
     logger.d("Checking location permissions");
     LocationPermission permission = await Geolocator.checkPermission();
 
@@ -208,114 +157,102 @@ class LocationService {
   Future<bool> askForLocationPermissions() async {
     logger.d("Requesting Location Permissions");
     LocationPermission permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse) {
-      return true;
-    } else {
-      return false;
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  /// Wires the relay in: sets our identity and starts decrypting incoming
+  /// messages into [userStateBox]. The relay may still be unauthenticated
+  /// (server unreachable); [myID] stays null until it recovers.
+  void setRelayClient(RelayClient relay, GroupCrypto groupCrypto) {
+    relayClient = relay;
+    crypto = groupCrypto;
+    myID = relay.isAuthenticated ? relay.userId : null;
+    _relaySubscription?.cancel();
+    _relaySubscription = relay.events.listen(_handleRelayEvent);
+  }
+
+  void _handleRelayEvent(RelayEvent event) {
+    if (event is RelayHelloEvent) {
+      // Relay (re)connected — adopt our server-assigned id.
+      myID = event.userId;
+      logger.d("Relay hello, myID=$myID");
+    } else if (event is RelayMessageEvent) {
+      _handleIncomingMessage(event.message);
+    } else if (event is RelayMemberEvent) {
+      logger.d("Member ${event.userId} ${event.action} in ${event.groupId}");
     }
   }
 
-  void setS5Messenger(S5Messenger inMessenger) {
-    s5messenger = inMessenger;
-    // Set you ID so it can be used later
-    myID = (s5messenger!.dataBox.get('identity_default')
-        as Map<dynamic, dynamic>)['publicKey'];
-    initializeGroupListeners();
-  }
-
-  void initializeGroupListeners() async {
-    // gotta wait here for the groups to populate, then you can add the subscriptions
-    while (s5messenger!.groups.isEmpty) {
-      await Future.delayed(Duration(milliseconds: 250));
+  // Decrypts an incoming location message and pushes it to the UI layer.
+  Future<void> _handleIncomingMessage(RelayMessage message) async {
+    // Skip messages we sent ourselves
+    if (message.senderId == myID) {
+      return;
     }
-
-    // For safety, make sure to dispose of any previous listeners
-    groupListeners.forEach((_, sub) => sub.cancel());
-    groupListeners.clear();
-
-    // Set a listener for each group then start listening for updates of location
-    for (final GroupState group in s5messenger!.groups.values) {
-      logger.d("Setting up listener for: ${group.groupId}");
-      setupListenToPeer(group);
+    final GroupCrypto? groupCrypto = crypto;
+    if (groupCrypto == null) return;
+    final Map<String, dynamic>? payload =
+        await groupCrypto.decrypt(message.groupId, message.ciphertext);
+    final MessageEmbed? messageEmbed =
+        payload == null ? null : MessageEmbed.fromJson(payload);
+    if (messageEmbed == null) {
+      logger.d("Message from ${message.senderId} failed to decrypt");
+      return;
     }
-  }
+    // Update the user's location
+    final UserState newUserState = UserState(
+      coords: HiveLatLng(
+          lat: messageEmbed.coordinates.latitude,
+          long: messageEmbed.coordinates.longitude),
+      ts: DateTime.now().millisecondsSinceEpoch,
+      name: messageEmbed.name,
+      color: messageEmbed.color.toARGB32(),
+    );
 
-  // Standard way to begin listening to a peer and add subscription
-  void setupListenToPeer(GroupState group) {
-    logger.d("Listening for group ${group.groupId}");
+    userStateBox.put(message.senderId, newUserState);
 
-    // Add the subscription to the set
-    final subscription = group.messageListStateNotifier.stream.listen((_) {
-      final TextMessage message =
-          (group.messagesMemory.first.msg as TextMessage);
-      // Skip message if from self
-      if (message.senderId == myID) {
-        return;
-      }
-      logger.d("Message incoming!");
-      if (message.embed != null) {
-        logger.d("And it has an embed");
-        // Update the user's locaiton
-        final MessageEmbed messageEmbed =
-            MessageEmbed.fromMsgpack(message.embed!);
-        // Create user state then push it to hive
-        final UserState newUserState = UserState(
-          coords: HiveLatLng(
-              lat: messageEmbed.coordinates.latitude,
-              long: messageEmbed.coordinates.longitude),
-          ts: DateTime.now().millisecondsSinceEpoch,
-          name: messageEmbed.name,
-          color: messageEmbed.color.toARGB32(),
-        );
+    logger.d(
+        "Just Put ${message.senderId}:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
 
-        userStateBox.put(message.senderId, newUserState);
-
-        logger.d(
-            "Just Put ${message.senderId}:\nCoords: ${messageEmbed.coordinates.latitude}, ${messageEmbed.coordinates.longitude}\nColor: ${messageEmbed.color}\nUsername: ${messageEmbed.name}");
-
-        // Then if there's a new group chat name, deal with that as well
-        if (messageEmbed.newGroupName != null) {
-          group.rename(messageEmbed.newGroupName!);
-        }
-      } else {
-        logger.d("Message had no geo embed");
-      }
-    });
-    groupListeners[group.groupId] = subscription;
+    // If there's a new group chat name, apply it locally
+    if (messageEmbed.newGroupName != null) {
+      // Replaced by server-side renames; kept for forward compatibility.
+      logger.d("Ignoring legacy group rename propagation");
+    }
   }
 
   // On every location update, this guy'll check which groups are good to ping,
-  // then send them the locaiton
+  // then send them the encrypted location
   Future<void> _updatePeers(LatLng latLng) async {
-    // before you do anything, test if s5 is online
-    if (s5messenger?.s5 != null) {
-      logger.d(
-          "S5 is currently ${(await checkS5Online(s5messenger!.s5) ? "online" : "offline")}");
+    final RelayClient? relay = relayClient;
+    final GroupCrypto? groupCrypto = crypto;
+    if (relay == null || groupCrypto == null || myID == null) {
+      logger.d("Relay not ready, skipping location update");
+      return;
     }
-    final Uint8List messageEmbedBytes =
-        MessageEmbed.fromPrefs(latLng, prefs, null).toMsgpack();
-    // Will run all the time, but won't actually do anything if s5Messenger isn't ready
-    if (s5messenger != null) {
-      for (final MapEntry<String, GroupState> group
-          in s5messenger!.groups.entries) {
-        GroupSettings groupSettings = GroupSettings.load(group.key, prefs);
-        // Now if the location should be shared, share the current location
-        if (groupSettings.shareLocation == true && myID != null) {
-          // grab ID
-          s5messenger!.group(group.key).sendMessage(
-                "location update",
-                messageEmbedBytes,
-                myID!,
-                _uuid.v4(),
-              );
-          logger.d("sent location");
+    // Will run all the time, but won't actually do anything if the relay isn't ready
+    for (final RelayGroup group in relay.groups) {
+      GroupSettings groupSettings = GroupSettings.load(group.id, prefs);
+      if (groupSettings.shareLocation == true) {
+        final Uint8List ciphertext =
+            await groupCrypto.encrypt(group.id, _embedFor(latLng));
+        try {
+          final RelayMessage acked = await relay.sendMessage(group.id, ciphertext);
+          logger.d("sent location (seq ${acked.seq})");
+        } catch (e) {
+          logger.e("Failed to send location to ${group.id}: $e");
         }
       }
     }
+  }
+
+  Map<String, dynamic> _embedFor(LatLng latLng) {
+    return MessageEmbed.fromPrefs(latLng, prefs, null).toJson();
   }
 
   void dispose() {
     _timer?.cancel();
+    _relaySubscription?.cancel();
   }
 }

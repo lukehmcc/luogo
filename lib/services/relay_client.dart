@@ -1,0 +1,604 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:hive_ce/hive.dart';
+import 'package:luogo/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+/// Default relay URL, overridable at build time with
+/// `--dart-define=LUOGO_RELAY_URL=...` and at runtime via the
+/// `server-url` setting.
+const String kDefaultRelayUrl = String.fromEnvironment(
+  'LUOGO_RELAY_URL',
+  defaultValue: 'http://localhost:8080',
+);
+
+String resolveRelayUrl(SharedPreferencesWithCache prefs) {
+  final String? configured = prefs.getString('server-url');
+  if (configured != null && configured.trim().isNotEmpty) {
+    return configured.trim();
+  }
+  return kDefaultRelayUrl;
+}
+
+class RelayException implements Exception {
+  final int statusCode;
+  final String message;
+  RelayException(this.statusCode, this.message);
+
+  @override
+  String toString() => 'RelayException($statusCode): $message';
+}
+
+/// A group as returned by the relay.
+class RelayGroup {
+  final String id;
+  final String name;
+  final String ownerId;
+  final int createdAt;
+  final int memberCount;
+
+  RelayGroup({
+    required this.id,
+    required this.name,
+    required this.ownerId,
+    required this.createdAt,
+    required this.memberCount,
+  });
+
+  factory RelayGroup.fromJson(Map<String, dynamic> json) => RelayGroup(
+        id: json['id'] as String,
+        name: json['name'] as String? ?? '',
+        ownerId: json['ownerId'] as String? ?? '',
+        createdAt: (json['createdAt'] as num?)?.toInt() ?? 0,
+        memberCount: (json['memberCount'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'ownerId': ownerId,
+        'createdAt': createdAt,
+        'memberCount': memberCount,
+      };
+}
+
+class RelayMember {
+  final String id;
+  final String name;
+  final int color;
+  final String publicKey;
+
+  RelayMember({
+    required this.id,
+    required this.name,
+    required this.color,
+    required this.publicKey,
+  });
+
+  factory RelayMember.fromJson(Map<String, dynamic> json) => RelayMember(
+        id: json['id'] as String,
+        name: json['name'] as String? ?? '',
+        color: (json['color'] as num?)?.toInt() ?? 0,
+        publicKey: json['publicKey'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'name': name, 'color': color, 'publicKey': publicKey};
+}
+
+class RelayMessage {
+  final String groupId;
+  final int seq;
+  final int ts;
+  final String senderId;
+  final Uint8List ciphertext;
+
+  RelayMessage({
+    required this.groupId,
+    required this.seq,
+    required this.ts,
+    required this.senderId,
+    required this.ciphertext,
+  });
+
+  factory RelayMessage.fromJson(String groupId, Map<String, dynamic> json) =>
+      RelayMessage(
+        groupId: groupId,
+        seq: (json['seq'] as num).toInt(),
+        ts: (json['ts'] as num).toInt(),
+        senderId: json['senderId'] as String? ?? '',
+        ciphertext: base64Url.decode(json['ciphertext'] as String),
+      );
+}
+
+/// Events pushed from the relay, either live over the WebSocket or as a
+/// result of a resync.
+sealed class RelayEvent {}
+
+class RelayHelloEvent extends RelayEvent {
+  final String userId;
+  RelayHelloEvent(this.userId);
+}
+
+class RelayMessageEvent extends RelayEvent {
+  final RelayMessage message;
+  RelayMessageEvent(this.message);
+}
+
+class RelayMemberEvent extends RelayEvent {
+  final String groupId;
+  final String action; // joined | left | renamed
+  final String userId;
+  final String? name;
+  RelayMemberEvent({
+    required this.groupId,
+    required this.action,
+    required this.userId,
+    this.name,
+  });
+}
+
+class RelayPresenceEvent extends RelayEvent {
+  final String groupId;
+  final List<String> online;
+  final String? offline;
+  RelayPresenceEvent({required this.groupId, required this.online, this.offline});
+}
+
+/// HTTP + WebSocket client for the Luogo relay.
+///
+/// The relay is a dumb, reliable router: it authenticates clients, tracks
+/// group membership, persists a bounded per-group message log with monotonic
+/// seq numbers, and fans messages out to connected members. All payloads are
+/// encrypted client-side with [GroupCrypto] and opaque to the relay.
+class RelayClient {
+  final SharedPreferencesWithCache prefs;
+  final Box<int> cursorsBox;
+  final Box<String> cacheBox;
+  final String baseUrl;
+
+  static const String _groupsCacheKey = 'groups';
+  static String _membersCacheKey(String groupId) => 'members:$groupId';
+
+  final HttpClient _http = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+
+  final StreamController<RelayEvent> _events =
+      StreamController<RelayEvent>.broadcast();
+  final List<RelayGroup> _groups = [];
+
+  String? _token;
+  String? _userId;
+  bool _liveRunning = false;
+  WebSocketChannel? _ws;
+
+  RelayClient({
+    required this.prefs,
+    required this.cursorsBox,
+    required this.cacheBox,
+    String? baseUrl,
+  }) : baseUrl = baseUrl ?? resolveRelayUrl(prefs) {
+    // Seed in-memory state from the last-known cache so offline code paths
+    // (resync, peer updates, drawer) have something to work with.
+    _groups.addAll(_cachedGroups());
+  }
+
+  String get userId => _userId!;
+  String? get token => _token;
+  bool get isAuthenticated => _token != null && _userId != null;
+
+  Stream<RelayEvent> get events => _events.stream;
+  List<RelayGroup> get groups => List.unmodifiable(_groups);
+
+  /// Restores a saved session, or registers a fresh device identity.
+  /// [name] and [color] come from the local profile (which may still be
+  /// empty at first launch). Never throws on network errors: registration is
+  /// retried by [_liveLoop] via [retryConnect] until the relay is reachable.
+  Future<void> connect({
+    required String name,
+    required int color,
+    required String publicKey,
+  }) async {
+    _pendingRegistration = (name: name, color: color, publicKey: publicKey);
+    await retryConnect();
+  }
+
+  ({String name, int color, String publicKey})? _pendingRegistration;
+
+  /// Attempts to become authenticated: restores a saved session, or
+  /// registers the device identity. No-op when already authenticated.
+  /// Never throws on network errors.
+  Future<void> retryConnect() async {
+    if (isAuthenticated) return;
+    final String? savedToken = prefs.getString('relay-token');
+    final String? savedUserId = prefs.getString('relay-user-id');
+    if (savedToken != null && savedUserId != null) {
+      _token = savedToken;
+      _userId = savedUserId;
+      logger.d("Restored relay session for $savedUserId");
+      return;
+    }
+    final pending = _pendingRegistration;
+    if (pending == null) return;
+    try {
+      final Map<String, dynamic> body = await _request('POST', '/api/users',
+          body: {
+            'name': pending.name,
+            'color': pending.color,
+            'publicKey': pending.publicKey
+          });
+      final Map<String, dynamic> user = body['user'] as Map<String, dynamic>;
+      _userId = user['id'] as String;
+      _token = body['token'] as String;
+      await prefs.setString('relay-token', _token!);
+      await prefs.setString('relay-user-id', _userId!);
+      logger.d("Registered new relay identity $userId");
+    } catch (e) {
+      logger.d("Relay registration failed (will retry): $e");
+    }
+  }
+
+  /// Updates the profile visible to other group members.
+  Future<void> updateProfile({required String name, required int color}) async {
+    await _request('PATCH', '/api/users/me', body: {'name': name, 'color': color});
+  }
+
+  Uri _uri(String path, [Map<String, String>? query]) {
+    final Uri base = Uri.parse(baseUrl);
+    return base.replace(path: path, queryParameters: query);
+  }
+
+  Future<Map<String, dynamic>> _request(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+  }) async {
+    final HttpClientRequest request =
+        await _http.openUrl(method, _uri(path, query));
+    request.headers.contentType = ContentType.json;
+    if (_token != null) {
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_token');
+    }
+    if (body != null) {
+      request.write(jsonEncode(body));
+    }
+    final HttpClientResponse response = await request.close();
+    final String raw = await response.transform(utf8.decoder).join();
+    final Map<String, dynamic>? json =
+        raw.isEmpty ? null : jsonDecode(raw) as Map<String, dynamic>;
+    if (response.statusCode >= 400) {
+      throw RelayException(
+        response.statusCode,
+        (json?['error'] as String?) ?? 'relay error ${response.statusCode}',
+      );
+    }
+    return json ?? <String, dynamic>{};
+  }
+
+  // --- local cache ------------------------------------------------------
+
+  // Last-known data is kept in the `relay-cache` Hive box so the UI keeps
+  // working when the relay is unreachable: member lists and groups fall
+  // back to the cached copy instead of throwing.
+
+  Future<void> _cacheGroups(List<RelayGroup> groups) => cacheBox.put(
+      _groupsCacheKey, jsonEncode(groups.map((g) => g.toJson()).toList()));
+
+  Future<void> _cacheMembers(String groupId, List<RelayMember> members) =>
+      cacheBox.put(_membersCacheKey(groupId),
+          jsonEncode(members.map((m) => m.toJson()).toList()));
+
+  List<RelayGroup> _cachedGroups() {
+    final String? raw = cacheBox.get(_groupsCacheKey);
+    if (raw == null) return [];
+    try {
+      return (jsonDecode(raw) as List<dynamic>)
+          .map((e) => RelayGroup.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      logger.e("Failed to decode cached groups: $e");
+      return [];
+    }
+  }
+
+  List<RelayMember> _cachedMembers(String groupId) {
+    final String? raw = cacheBox.get(_membersCacheKey(groupId));
+    if (raw == null) return [];
+    try {
+      return (jsonDecode(raw) as List<dynamic>)
+          .map((e) => RelayMember.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      logger.e("Failed to decode cached members for $groupId: $e");
+      return [];
+    }
+  }
+
+  /// Synchronous read of the last-known member list for [groupId].
+  /// Never throws; returns an empty list when nothing is cached yet.
+  List<RelayMember> cachedMembers(String groupId) => _cachedMembers(groupId);
+
+  // Patches the cached member list when the relay pushes join/leave events so
+  // the offline fallback stays close to reality even without a full refetch.
+  Future<void> _updateCachedMembersOnEvent(
+      String groupId, String action, String userId) async {
+    final List<RelayMember> cached = _cachedMembers(groupId);
+    if (cached.isEmpty) return;
+    if (action == 'left') {
+      cached.removeWhere((m) => m.id == userId);
+    } else if (action == 'joined') {
+      if (cached.every((m) => m.id != userId)) {
+        cached.add(RelayMember(id: userId, name: '', color: 0, publicKey: ''));
+      }
+    } else {
+      return; // renamed and friends — the next successful fetch has details
+    }
+    await _cacheMembers(groupId, cached);
+  }
+
+  // --- groups -----------------------------------------------------------
+
+  Future<List<RelayGroup>> fetchGroups() async {
+    try {
+      final Map<String, dynamic> body = await _request('GET', '/api/groups');
+      final List<dynamic> raw = body['groups'] as List<dynamic>? ?? [];
+      final List<RelayGroup> groups = raw
+          .map((e) => RelayGroup.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _groups
+        ..clear()
+        ..addAll(groups);
+      await _cacheGroups(groups);
+      return groups;
+    } catch (e) {
+      logger.d("fetchGroups failed ($e), falling back to cache");
+      final List<RelayGroup> cached = _cachedGroups();
+      _groups
+        ..clear()
+        ..addAll(cached);
+      return cached;
+    }
+  }
+
+  Future<RelayGroup> fetchGroup(String groupId) async {
+    final Map<String, dynamic> json =
+        await _request('GET', '/api/groups/$groupId');
+    return RelayGroup.fromJson(json);
+  }
+
+  Future<RelayGroup> createGroup(String name) async {
+    final Map<String, dynamic> json =
+        await _request('POST', '/api/groups', body: {'name': name});
+    final RelayGroup group = RelayGroup.fromJson(json);
+    _groups.insert(0, group);
+    await _cacheGroups(_groups);
+    return group;
+  }
+
+  Future<void> renameGroup(String groupId, String name) async {
+    await _request('PATCH', '/api/groups/$groupId', body: {'name': name});
+    final RelayGroup? existing =
+        _groups.where((g) => g.id == groupId).firstOrNull;
+    if (existing != null) {
+      _groups[_groups.indexOf(existing)] = RelayGroup(
+        id: existing.id,
+        name: name,
+        ownerId: existing.ownerId,
+        createdAt: existing.createdAt,
+        memberCount: existing.memberCount,
+      );
+      await _cacheGroups(_groups);
+    }
+  }
+
+  Future<void> leaveGroup(String groupId) async {
+    await _request('POST', '/api/groups/$groupId/leave');
+    _groups.removeWhere((g) => g.id == groupId);
+    await _cacheGroups(_groups);
+    await cacheBox.delete(_membersCacheKey(groupId));
+  }
+
+  // --- invites & members ------------------------------------------------
+
+  /// Issues a one-time invite token from the relay. The group key must be
+  /// wrapped with it client-side via [GroupCrypto.buildInvitePayload].
+  Future<String> createInvite(String groupId) async {
+    final Map<String, dynamic> body =
+        await _request('POST', '/api/groups/$groupId/invites');
+    return body['inviteToken'] as String;
+  }
+
+  Future<RelayGroup> joinGroup(String groupId, String inviteToken) async {
+    final Map<String, dynamic> json = await _request(
+      'POST',
+      '/api/groups/$groupId/join',
+      body: {'inviteToken': inviteToken},
+    );
+    final RelayGroup group = RelayGroup.fromJson(json);
+    _groups.add(group);
+    await _cacheGroups(_groups);
+    return group;
+  }
+
+  Future<List<RelayMember>> fetchMembers(String groupId) async {
+    try {
+      final Map<String, dynamic> body =
+          await _request('GET', '/api/groups/$groupId/members');
+      final List<RelayMember> members = (body['members'] as List<dynamic>? ?? [])
+          .map((e) => RelayMember.fromJson(e as Map<String, dynamic>))
+          .toList();
+      await _cacheMembers(groupId, members);
+      return members;
+    } catch (e) {
+      logger.d("fetchMembers failed for $groupId ($e), falling back to cache");
+      return _cachedMembers(groupId);
+    }
+  }
+
+  // --- messages ---------------------------------------------------------
+
+  /// Sends an already-encrypted payload. Returns the server-acked message
+  /// (with its group seq) and emits it locally as a RelayMessageEvent.
+  Future<RelayMessage> sendMessage(String groupId, Uint8List ciphertext) async {
+    final Map<String, dynamic> json = await _request(
+      'POST',
+      '/api/groups/$groupId/messages',
+      body: {'ciphertext': base64Url.encode(ciphertext)},
+    );
+    final RelayMessage message = RelayMessage.fromJson(groupId, json);
+    _applyMessage(message);
+    return message;
+  }
+
+  /// Fetches messages newer than [afterSeq] (bounded by the server log).
+  Future<List<RelayMessage>> fetchMessagesAfter(
+    String groupId,
+    int afterSeq, {
+    int limit = 500,
+  }) async {
+    final Map<String, dynamic> body = await _request(
+      'GET',
+      '/api/groups/$groupId/messages',
+      query: {'afterSeq': '$afterSeq', 'limit': '$limit'},
+    );
+    return (body['messages'] as List<dynamic>? ?? [])
+        .map((e) => RelayMessage.fromJson(groupId, e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Pulls everything we've missed since our last cursor and emits it as
+  /// RelayMessageEvents. Call this on connect/foreground to stay current.
+  Future<void> resyncGroup(String groupId) async {
+    final int cursor = cursorsBox.get(groupId) ?? 0;
+    final List<RelayMessage> messages =
+        await fetchMessagesAfter(groupId, cursor);
+    for (final RelayMessage message in messages) {
+      _applyMessage(message);
+    }
+  }
+
+  Future<void> resyncAll() async {
+    for (final RelayGroup group in _groups) {
+      try {
+        await resyncGroup(group.id);
+      } catch (e) {
+        logger.e("resync failed for ${group.id}: $e");
+      }
+    }
+  }
+
+  void _applyMessage(RelayMessage message) {
+    final int cursor = cursorsBox.get(message.groupId) ?? 0;
+    if (message.seq <= cursor) {
+      return; // dedupe (live event arrived before/after a resync)
+    }
+    cursorsBox.put(message.groupId, message.seq);
+    _events.add(RelayMessageEvent(message));
+  }
+
+  // --- live connection --------------------------------------------------
+
+  /// Opens the WebSocket and keeps it alive with exponential backoff,
+  /// resyncing all groups on every (re)connect.
+  void startLive() {
+    if (_liveRunning) return;
+    _liveRunning = true;
+    unawaited(_liveLoop());
+  }
+
+  Future<void> _liveLoop() async {
+    int backoffSeconds = 1;
+    while (_liveRunning) {
+      try {
+        // Make sure we're authenticated before opening the WebSocket.
+        if (!isAuthenticated) {
+          await retryConnect();
+        }
+        if (!isAuthenticated) {
+          logger.d("Relay not reachable yet, waiting to retry...");
+        } else {
+          final Uri base = Uri.parse(baseUrl);
+          final Uri uri = base.replace(
+            scheme: base.scheme == 'https' ? 'wss' : 'ws',
+            path: '/ws',
+            queryParameters: {'token': _token},
+          );
+          final WebSocketChannel channel = WebSocketChannel.connect(uri);
+          _ws = channel;
+          await channel.ready;
+          backoffSeconds = 1;
+          logger.d("Relay WebSocket connected");
+          // Catch up on anything missed while offline.
+          await resyncAll();
+          await for (final dynamic raw in channel.stream) {
+            final Map<String, dynamic> evt =
+                jsonDecode(raw as String) as Map<String, dynamic>;
+            _handleServerEvent(evt);
+          }
+        }
+      } catch (e) {
+        logger.e("Relay WebSocket error: $e");
+      } finally {
+        _ws = null;
+      }
+      if (!_liveRunning) break;
+      await Future<void>.delayed(Duration(seconds: backoffSeconds));
+      if (backoffSeconds < 30) backoffSeconds *= 2;
+    }
+  }
+
+  void _handleServerEvent(Map<String, dynamic> evt) {
+    switch (evt['type']) {
+      case 'hello':
+        _events.add(RelayHelloEvent(evt['userId'] as String? ?? ''));
+      case 'message':
+        final RelayMessage message =
+            RelayMessage.fromJson(evt['groupId'] as String, evt);
+        _applyMessage(message);
+      case 'member':
+        _events.add(RelayMemberEvent(
+          groupId: evt['groupId'] as String,
+          action: evt['action'] as String? ?? '',
+          userId: evt['userId'] as String? ?? '',
+          name: evt['name'] as String?,
+        ));
+        _updateCachedMembersOnEvent(
+          evt['groupId'] as String,
+          evt['action'] as String? ?? '',
+          evt['userId'] as String? ?? '',
+        );
+      case 'presence':
+        _events.add(RelayPresenceEvent(
+          groupId: evt['groupId'] as String,
+          online: (evt['online'] as List<dynamic>? ?? [])
+              .map((e) => e as String)
+              .toList(),
+          offline: evt['offline'] as String?,
+        ));
+      default:
+        logger.d("Unknown relay event: $evt");
+    }
+  }
+
+  void stopLive() {
+    _liveRunning = false;
+    _ws?.sink.close();
+  }
+
+  void dispose() {
+    stopLive();
+    _events.close();
+    _http.close(force: true);
+  }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull {
+    final Iterator<T> it = iterator;
+    return it.moveNext() ? it.current : null;
+  }
+}

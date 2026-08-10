@@ -1,46 +1,29 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lib5/util.dart';
 import 'package:luogo/cubit/map/map_overlay/map_overlay_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/model/user_state.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/utils/mapping.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import 'package:s5_messenger/s5_messenger.dart';
 
 /// A Cubit class for managing the map overlay state.
 ///
-/// This cubit handles QR code generation for keypackages, group selection
-/// to update and display user pins on the map, and real-time listening to
-/// location updates for dynamic symbol management.
-///
-/// Example usage:
-/// ```dart
-/// BlocProvider(
-///   create: (context) => MapOverlayCubit(
-///     selectedGroup: yourSelectedGroupInstance,
-///     s5messenger: yourS5MessengerInstance,
-///     locationService: yourLocationServiceInstance,
-///     mapController: yourMapControllerCompleter,
-///     symbolIDMap: yourSymbolIDMap,
-///   ),
-///   child: YourMapOverlayWidget(),
-/// )
-/// ```
+/// Handles group selection to update and display user pins on the map, and
+/// real-time listening to location updates for dynamic symbol management.
 class MapOverlayCubit extends Cubit<MapOverlayState> {
   GroupInfo? selectedGroup;
-  S5Messenger s5messenger;
+  RelayClient relayClient;
   LocationService locationService;
   Completer<MapLibreMapController> mapController;
   Map<String, String> symbolIDMap;
   MapOverlayCubit({
     required this.selectedGroup,
-    required this.s5messenger,
+    required this.relayClient,
     required this.locationService,
     required this.mapController,
     required this.symbolIDMap,
@@ -51,65 +34,75 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
   final Map<String, StreamSubscription<dynamic>> _activeListeners = {};
   final Map<String, Symbol> _activeSymbols = {};
 
-  // Create keypackage, marshal it, then send it to the UI to make a QR code
-  void qrButtonPressed() async {
-    final Uint8List keypackage = await s5messenger.createKeyPackage();
-    final String message =
-        "luogo-user-identity:${base64UrlNoPaddingEncode(keypackage)}";
-    emit(MapOverlayQRPopupPressed(keypair: message));
+  // Opens the QR invite scanner so the user can join a group
+  void qrButtonPressed() {
+    emit(MapOverlayScannerPopupPressed());
   }
 
   // Function that repeatedly tries to populate pins until the length is correct
   // used when creating new rooms
   Future<void> ensureSufficientPinsPopulated(GroupInfo groupInfo) async {
-    while (true) {
-      final int groupMembersCount =
-          s5messenger.group(groupInfo.id).members.length;
+    // Give up after ~30s so an offline first run can't spin forever.
+    for (int attempt = 0; attempt < 30; attempt++) {
+      List<RelayMember> members;
+      try {
+        members = await relayClient.fetchMembers(groupInfo.id);
+      } catch (e) {
+        members = [];
+      }
+      final int groupMembersCount = members.length;
       final int symbolCount =
           _activeSymbols.length + 1; // + 1 because local user isn't counted
-      if (groupMembersCount != symbolCount) {
-        // If they mismatch, check to make sure all users have an entry,
-        // it's not worth doing if they don't
-        final GroupState groupState = s5messenger.group(groupInfo.id);
-
-        // Make sure the groupMembersCount isn't empty
-        if (groupMembersCount == 0) {
-          logger.d("Group is empty, waiting for members...");
-          await Future.delayed(Duration(seconds: 1));
-          continue;
-        }
-        bool allMembersPopulated = true;
-
-        for (final GroupMember member in groupState.members) {
-          final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
-          if (memberID == locationService.myID) {
-            continue; // skip if self, no need to waste a loop
-          }
-
-          // First gotta add the initial symbols
-          final UserState? userState =
-              locationService.userStateBox.get(memberID);
-          if (userState == null) {
-            allMembersPopulated = false;
-            break; // if one is null, no need to check the rest this iteration
-          }
-        }
-        if (allMembersPopulated) {
-          groupSelectedEngagePins(groupInfo);
-          return; // exit loop once engaged
-        }
-      } else {
+      if (groupMembersCount == symbolCount) {
         return; // exit loop once good
+      }
+      // If they mismatch, check to make sure all users have an entry,
+      // it's not worth doing if they don't
+      // Make sure the groupMembersCount isn't empty
+      if (groupMembersCount == 0) {
+        logger.d("Group is empty, waiting for members...");
+        await Future.delayed(Duration(seconds: 1));
+        continue;
+      }
+      bool allMembersPopulated = true;
+
+      for (final RelayMember member in members) {
+        final String memberID = member.id;
+        if (memberID == locationService.myID) {
+          continue; // skip if self, no need to waste a loop
+        }
+
+        // First gotta add the initial symbols
+        final UserState? userState =
+            locationService.userStateBox.get(memberID);
+        if (userState == null) {
+          allMembersPopulated = false;
+          break; // if one is null, no need to check the rest this iteration
+        }
+      }
+      if (allMembersPopulated) {
+        groupSelectedEngagePins(groupInfo);
+        return; // exit loop once engaged
       }
       await Future.delayed(Duration(seconds: 1));
     }
+    logger.d("Gave up waiting for group members to populate");
   }
 
   // When a group is selected, put their pins on the map
   void groupSelectedEngagePins(GroupInfo groupInfo) async {
     logger.d("engaging pins");
-    // Nuke all the old listeners & symbols
     final controller = await mapController.future;
+    // Fetch members BEFORE touching the map: if the relay is unreachable
+    // keep the last-known pins on screen instead of wiping them all.
+    final List<RelayMember> members;
+    try {
+      members = await relayClient.fetchMembers(groupInfo.id);
+    } catch (e) {
+      logger.e("Failed to fetch members: $e");
+      return;
+    }
+    // Nuke all the old listeners & symbols
     for (final Symbol symbol in _activeSymbols.values) {
       logger.d("Removing symbol ${symbol.id}");
       await controller.removeSymbol(symbol);
@@ -121,9 +114,8 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
     _activeListeners.clear();
 
     // Now add all the new guys back
-    final GroupState groupState = s5messenger.group(groupInfo.id);
-    for (final GroupMember member in groupState.members) {
-      final String memberID = base64UrlNoPaddingEncode(member.signatureKey);
+    for (final RelayMember member in members) {
+      final String memberID = member.id;
 
       // First gotta add the initial symbols
       final UserState? userState = locationService.userStateBox.get(memberID);
@@ -148,7 +140,7 @@ class MapOverlayCubit extends Cubit<MapOverlayState> {
         logger.d("Adding symbol ${userSymbol.id}");
         symbolIDMap[userSymbol.id] = memberID;
       }
-      // Then add listeners to keep them updated on locaiton updates
+      // Then add listeners to keep them updated on location updates
       final listener = locationService.userStateBox
           .watch(key: memberID)
           .listen((event) async {

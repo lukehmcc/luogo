@@ -10,19 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  s5_messenger:
-    # path: ../s5-things/s5_messenger/
-    git: https://github.com/s5-dev/s5_messenger.git
-  s5:
-    # path: ../s5-things/s5-dart/
-    git: 
-      url: https://github.com/lukehmcc/s5-dart.git
-      ref: 0.2.0-patched
-  lib5: 
-    # path: ../s5-things/lib5/
-    git: 
-      url: https://github.com/lukehmcc/lib5.git
-      ref: 0.2.0-patched
   cupertino_icons: ^1.0.8
   hive_ce: ^2.11.2
   logger: ^2.5.0
@@ -42,13 +29,14 @@ dependencies:
   image: ^4.3.0
   mobile_scanner: ^7.0.1
   qr_flutter: ^4.1.0
-  msgpack_dart: ^1.0.1
   uuid: ^4.5.1
   intl: ^0.20.2
   background_fetch: ^1.4.0
   get_it: ^8.1.0
   flutter_svg: ^2.0.13
   package_info_plus: ^8.3.1
+  cryptography: ^2.7.0
+  web_socket_channel: ^3.0.1
 
 dev_dependencies:
   flutter_test:

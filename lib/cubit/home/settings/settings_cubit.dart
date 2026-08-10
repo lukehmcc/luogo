@@ -20,9 +20,9 @@ class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit({
     required this.prefs,
   }) : super(SettingsInitial()) {
-    String? nodeString = prefs.getString('s5-node');
-    if (nodeString != null) {
-      controller.text = nodeString;
+    String? serverUrl = prefs.getString('server-url');
+    if (serverUrl != null) {
+      controller.text = serverUrl;
     }
     PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
       String v = packageInfo.version;
@@ -34,10 +34,10 @@ class SettingsCubit extends Cubit<SettingsState> {
   TextEditingController controller = TextEditingController();
   String version = "";
 
-  void setS5Node() {
+  void setServerUrl() {
     if (_validateUrl(controller.text)) {
       logger.d("valid Url time");
-      prefs.setString('s5-node', controller.text);
+      prefs.setString('server-url', controller.text);
       emit(SettingsNewNodeSucsess());
     } else {
       logger.d("invald url");

@@ -23,20 +23,7 @@ class InitRouterPage extends StatelessWidget {
         MainStateInitial() => const SillyCircularProgressIndicator(),
         MainStateLoading() => const SillyCircularProgressIndicator(),
         MainStateError(:final message) => Center(child: Text(message)),
-        MainStateNeedsLocationPermission(
-          :final prefs,
-          :final locationService,
-        ) =>
-          _buildInitRouterPage(context, prefs, locationService),
-        MainStateLightInitialized(
-          :final prefs,
-          :final locationService,
-        ) =>
-          _buildInitRouterPage(context, prefs, locationService),
-        MainStateHeavyInitialized(
-          :final prefs,
-          :final locationService,
-        ) =>
+        MainStateInitialized(:final prefs, :final locationService) =>
           _buildInitRouterPage(context, prefs, locationService),
       };
     });

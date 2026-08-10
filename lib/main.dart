@@ -42,7 +42,6 @@ void main() async {
       // attempt to grab the old location service
       try {
         LocationService locationService = GetIt.I<LocationService>();
-        locationService.initializeGroupListeners();
         await locationService.sendLocationUpdateOneShot();
         logger.d("Sucsessfully background oneshot");
       } catch (e) {
@@ -51,7 +50,6 @@ void main() async {
         logger.d("attempting re-init");
         LocationService locationService =
             await LocationService.initializeForBackground();
-        locationService.initializeGroupListeners();
         await locationService.sendLocationUpdateOneShot();
         // Now that it has been re-inited, start listener and update peers
       }

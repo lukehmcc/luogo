@@ -73,14 +73,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
-  base_codecs:
-    dependency: transitive
-    description:
-      name: base_codecs
-      sha256: "41701a12ede9912663decd708279924ece5018566daa7d1f484d5f4f10894f91"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   bloc:
     dependency: transitive
     description:
@@ -105,14 +97,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.5.4"
-  build_cli_annotations:
-    dependency: transitive
-    description:
-      name: build_cli_annotations
-      sha256: e563c2e01de8974566a1998410d3f6f03521788160a02503b0b1f1a46c7b3d95
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   build_config:
     dependency: transitive
     description:
@@ -241,22 +225,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
-  cryptography_flutter_plus:
-    dependency: transitive
+  cryptography:
+    dependency: "direct main"
     description:
-      name: cryptography_flutter_plus
-      sha256: "35a8c270aae0abaac7125a6b6b33c2b3daa0ea90d85320aa7d588b6dd6c2edc9"
+      name: cryptography
+      sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.4"
-  cryptography_plus:
-    dependency: transitive
-    description:
-      name: cryptography_plus
-      sha256: "34db787df4f4740a39474b6fb0a610aa6dc13a5b5b68754b4787a79939ac0454"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.7.1"
+    version: "2.9.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -403,14 +379,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  flutter_rust_bridge:
-    dependency: transitive
-    description:
-      name: flutter_rust_bridge
-      sha256: "37ef40bc6f863652e865f0b2563ea07f0d3c58d8efad803cc01933a4b2ee067e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.11.1"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -679,24 +647,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  lib5:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "0.2.0-patched"
-      resolved-ref: "5fbf0d3a9d3457fcd20b2bb14e1d853f764aaa26"
-      url: "https://github.com/lukehmcc/lib5.git"
-    source: git
-    version: "0.2.0"
-  lib5_crypto_implementation_dart:
-    dependency: transitive
-    description:
-      path: "."
-      ref: "0.2.0-patched"
-      resolved-ref: fb89e928be1b076db0b581e19e0d9f10ad08acc3
-      url: "https://github.com/lukehmcc/lib5_crypto_implementation_dart.git"
-    source: git
-    version: "0.2.0"
   lints:
     dependency: transitive
     description:
@@ -817,14 +767,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.1.4"
-  msgpack_dart:
-    dependency: "direct main"
-    description:
-      name: msgpack_dart
-      sha256: c2d235ed01f364719b5296aecf43ac330f0d7bc865fa134d0d7910a40454dffb
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   nested:
     dependency: transitive
     description:
@@ -833,14 +775,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  ntp:
-    dependency: transitive
-    description:
-      name: ntp
-      sha256: "198db73e5059b334b50dbe8c626011c26576778ee9fc53f4c55c1d89d08ed2d2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   package_config:
     dependency: transitive
     description:
@@ -1033,32 +967,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
-  s5:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: "0.2.0-patched"
-      resolved-ref: ba10c8e0f41a0fc65061d7c5ead7a8fea8b5e374
-      url: "https://github.com/lukehmcc/s5-dart.git"
-    source: git
-    version: "0.2.2"
-  s5_messenger:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: afd347166be96efb4c022439a6c1bc69ebb782ad
-      url: "https://github.com/s5-dev/s5_messenger.git"
-    source: git
-    version: "0.2.1"
-  s5_msgpack:
-    dependency: transitive
-    description:
-      name: s5_msgpack
-      sha256: "6308b2a59c760aff1c43dff1dc0c3c332378dd73c93f0cadfea37961aee5a46f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1224,14 +1132,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
-  tint:
-    dependency: transitive
-    description:
-      name: tint
-      sha256: "9652d9a589f4536d5e392cf790263d120474f15da3cf1bee7f1fdb31b4de5f46"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   typed_data:
     dependency: transitive
     description:
@@ -1376,14 +1276,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  web_socket_channel:
+  web_socket:
     dependency: transitive
     description:
-      name: web_socket_channel
-      sha256: d88238e5eac9a42bb43ca4e721edba3c08c6354d4a53063afaa568516217621b
+      name: web_socket
+      sha256: "34d64019aa8e36bf9842ac014bb5d2f5586ca73df5e4d9bf5c936975cae6982c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "1.0.1"
+  web_socket_channel:
+    dependency: "direct main"
+    description:
+      name: web_socket_channel
+      sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
   webdriver:
     dependency: transitive
     description:

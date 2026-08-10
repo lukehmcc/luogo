@@ -43,13 +43,13 @@ class InviteUserQrDialog extends StatelessWidget {
                     width: MediaQuery.of(context).size.width * .7,
                     height: MediaQuery.of(context).size.width * .7,
                     child: QrImageView(
-                      data: inviteUserQrCubit.luogoInviteToken,
+                      data: inviteUserQrCubit.invitePayload,
                     ),
                   ),
                   ElevatedButton(
                       onPressed: () => Clipboard.setData(
                             ClipboardData(
-                              text: inviteUserQrCubit.luogoInviteToken,
+                              text: inviteUserQrCubit.invitePayload,
                             ),
                           ),
                       child: Text("Copy Invite")),

@@ -6,17 +6,23 @@ import 'package:luogo/cubit/map/invite_user_qr/invite_user_qr_cubit.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/model/group_info.dart';
 import 'package:luogo/model/user_state.dart';
+import 'package:luogo/services/group_crypto.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/view/page/map/invite_user_qr_dialog.dart';
 import 'package:luogo/view/widgets/circle_avatar_styled_named.dart';
-import 'package:s5_messenger/s5_messenger.dart';
 
 /// Displays a group information sheet with member list and controls.
 class GroupSheet extends StatelessWidget {
   final GroupInfo groupInfo;
-  final S5Messenger s5messenger;
+  final RelayClient relayClient;
+  final GroupCrypto groupCrypto;
 
-  const GroupSheet(
-      {super.key, required this.groupInfo, required this.s5messenger});
+  const GroupSheet({
+    super.key,
+    required this.groupInfo,
+    required this.relayClient,
+    required this.groupCrypto,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +35,9 @@ class GroupSheet extends StatelessWidget {
               builder: (BuildContext context) {
                 return BlocProvider(
                   create: (BuildContext context) => InviteUserQrCubit(
-                      s5messenger: s5messenger, groupInfo: groupInfo),
+                      relayClient: relayClient,
+                      groupCrypto: groupCrypto,
+                      groupInfo: groupInfo),
                   child: InviteUserQrDialog(),
                 );
               }).then((_) {
@@ -83,24 +91,21 @@ class GroupSheet extends StatelessWidget {
               ),
               Text("Members:"),
               Expanded(
-                  child: StreamBuilder<void>(
-                stream:
-                    s5messenger.group(groupInfo.id).membersStateNotifier.stream,
+                  child: StreamBuilder<List<RelayMember>>(
+                stream: groupSheetCubit.membersStream,
                 builder: (context, snapshot) {
-                  if (s5messenger.group(groupInfo.id).members.isEmpty) {
+                  final members = snapshot.data ?? [];
+                  if (members.isEmpty) {
                     return Center(
                       child: Text("No that isn't right..."),
                     );
                   }
                   return ListView(
-                    children: s5messenger
-                        .group(groupInfo.id)
-                        .members
-                        .map<Widget>((GroupMember member) {
+                    children: members.map<Widget>((RelayMember member) {
                       // define this first because will be used multiple times
                       final UserState? userState =
                           BlocProvider.of<GroupSheetCubit>(context)
-                              .userStateFromSigkey(member.signatureKey);
+                              .userStateFromId(member.id);
                       if (userState == null) {
                         return Container();
                       }

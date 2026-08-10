@@ -30,7 +30,7 @@
 
 ![3screenshots](assets/screenshots.jpg)
 
-**Luogo** is a cross-platform mobile app that allows groups of people to easily share their location without it [being sold](https://www.theverge.com/2021/12/9/22820381/tile-life360-location-tracking-data-privacy). Fully open source, writing in dart & rust, and utilizing modern MLS & encryption tech. You no longer have to trust a large corporatoin with your data.
+**Luogo** is a cross-platform mobile app that allows groups of people to easily share their location without it [being sold](https://www.theverge.com/2021/12/9/22820381/tile-life360-location-tracking-data-privacy). Fully open source, written in dart & go, and utilizing modern encryption tech. You no longer have to trust a large corporatoin with your data.
 
 ---
 
@@ -38,9 +38,9 @@
 
 - **Cross Compatible:** No more worrying about walled gardens. All of your friends can join regardless of platform. (iOS/Android)
 
-- **Batteries Included:** No configuration required to get started. (Though you still can configure your [S5 Node](https://s5.pro/) if you wish).
+- **Batteries Included:** No configuration required to get started. (Though you still can configure your own relay server if you wish).
 
-- **MLS:** Utilizes [modern encryption](https://github.com/openmls/openmls) to make sure no one can read your location data unless you want them to.
+- **E2E Encrypted:** Utilizes [modern encryption](https://pub.dev/packages/cryptography) to make sure no one can read your location data unless you want them to.
 
 - **Groups:** Granular group sharing so you can control who knows where you are.
 
@@ -72,7 +72,7 @@ Feel free to [submit an issue](https://github.com/lukehmcc/luogo/issues) or [PR]
 
 ## Architecture
 
-**Backend:** Utilizes the [s5_messenger](https://github.com/s5-dev/s5_messenger) library to handle messaging between users. The users location is grabed from the [geolocator](https://pub.dev/packages/geolocator), parsed into a [message format](https://github.com/s5-dev/s5_messenger/blob/main/lib/src/mls5/model/message.dart), then s5_messenger uses [openmls](https://crates.io/crates/openmls) to create the message in the respecitve group, and this message is relayed through the s5 network via a [streams message](https://docs.s5.pro/spec/streams.html). This is then done in reverse by the other clients in the room.
+**Backend:** A single-binary [Go relay server](server/) (SQLite-backed) routes encrypted location messages between group members over WebSockets. Group keys are shared out-of-band via QR invite codes, so the server only ever sees ciphertext. The client's location is grabbed from the [geolocator](https://pub.dev/packages/geolocator), encrypted with [XChaCha20-Poly1305](https://pub.dev/packages/cryptography) using the per-group key, and pushed through the relay. Clients resync from the server's per-group message log on reconnect, so everyone stays up to date.
 
 **Front End:** Utilizes [Flutter](https://flutter.dev/) to handle cross-platform compling with a single codebase. [Cubits](https://bloclibrary.dev/bloc-concepts/#creating-a-cubit) are used to handle state and seperate out buisness logic from the UI. The state code can be found in `lib/cubit` and the UI code is in in `lib/view`.  
 

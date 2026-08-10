@@ -120,7 +120,7 @@ class MapCubit extends Cubit<MapState> {
 
   // Callback to add the local user's icon to the map
   // Hadnling the local user & other users is seperate because we want
-  // this one to load fast before s5messenger can load (which can take a couple seconds)
+  // this one to load fast
   void _addUserIcon() async {
     if (_userPosition != null) {
       // Now add personal users
@@ -144,7 +144,6 @@ class MapCubit extends Cubit<MapState> {
           iconSize: 1.0,
           iconAnchor: 'bottom'));
       // We don't have to add this user to the map because we store the symbol locally
-      // we also can't because s5messenger hasn't necesarily been loaded yet
       logger.d("added image asset");
     }
   }

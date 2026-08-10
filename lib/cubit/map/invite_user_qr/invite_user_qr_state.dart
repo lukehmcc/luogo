@@ -1,5 +1,5 @@
 abstract class InviteUserQrState {}
 
-class InviteUserQrInital extends InviteUserQrState {}
+class InviteUserQrInitial extends InviteUserQrState {}
 
 class InviteUserQrInviteCreated extends InviteUserQrState {}
