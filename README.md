@@ -46,6 +46,34 @@
 
 - **One Time Send:** If you just want someone to have your location once, just send it with the one time button! No need to constantly send updates.
 
+## Self Hosting
+
+Luogo is designed so you can run your own relay and keep all traffic on your own hardware, rather than someone else's.
+
+Create a `docker-compose.yml`:
+
+```yaml
+services:
+  luogo-relay:
+    image: ghcr.io/lukehmcc/luogo-relay:latest
+    container_name: luogo-relay
+    restart: unless-stopped
+    ports:
+      - "8040:8040"
+    volumes:
+      - ./data:/data
+```
+
+Then start it:
+
+```bash
+docker compose up -d
+```
+
+Open the app, go to **Settings**, and set the **Relay Server URL** to your relay's address (e.g. `https://relay.example.com`).
+
+> Note: production Android builds only allow HTTPS (except localhost), so serve the relay behind Caddy/nginx or with the `-tls-cert`/`-tls-key` flags for TLS. See [`server/README.md`](server/README.md) for details.
+
 ## Development
 
 To get started with local development do the following:

@@ -249,7 +249,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"Hello from luogo-relay :)": true})
+	writeJSON(w, http.StatusOK, "Hello from luogo-relay :)")
 }
 
 type createUserReq struct {

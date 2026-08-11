@@ -13,7 +13,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// `server-url` setting.
 const String kDefaultRelayUrl = String.fromEnvironment(
   'LUOGO_RELAY_URL',
-  defaultValue: 'http://localhost:8080',
+  defaultValue: 'https://relay.luogo.app',
 );
 
 /// Normalizes a relay URL for in-app use: WebSocket-style schemes map to
@@ -155,7 +155,8 @@ class RelayPresenceEvent extends RelayEvent {
   final String groupId;
   final List<String> online;
   final String? offline;
-  RelayPresenceEvent({required this.groupId, required this.online, this.offline});
+  RelayPresenceEvent(
+      {required this.groupId, required this.online, this.offline});
 }
 
 /// HTTP + WebSocket client for the Luogo relay.
@@ -173,7 +174,8 @@ class RelayClient {
   static const String _groupsCacheKey = 'groups';
   static String _membersCacheKey(String groupId) => 'members:$groupId';
 
-  final HttpClient _http = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+  final HttpClient _http = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 10);
 
   final StreamController<RelayEvent> _events =
       StreamController<RelayEvent>.broadcast();
@@ -253,7 +255,8 @@ class RelayClient {
 
   /// Updates the profile visible to other group members.
   Future<void> updateProfile({required String name, required int color}) async {
-    await _request('PATCH', '/api/users/me', body: {'name': name, 'color': color});
+    await _request('PATCH', '/api/users/me',
+        body: {'name': name, 'color': color});
   }
 
   Uri _uri(String path, [Map<String, String>? query]) {
@@ -472,9 +475,10 @@ class RelayClient {
     try {
       final Map<String, dynamic> body =
           await _request('GET', '/api/groups/$groupId/members');
-      final List<RelayMember> members = (body['members'] as List<dynamic>? ?? [])
-          .map((e) => RelayMember.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final List<RelayMember> members =
+          (body['members'] as List<dynamic>? ?? [])
+              .map((e) => RelayMember.fromJson(e as Map<String, dynamic>))
+              .toList();
       await _cacheMembers(groupId, members);
       return members;
     } catch (e) {

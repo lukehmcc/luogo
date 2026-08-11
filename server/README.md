@@ -26,6 +26,34 @@ docker build -t luogo-relay .
 docker run -p 8080:8080 -v relay-data:/data luogo-relay -db /data/luogo-relay.db
 ```
 
+### Docker Compose
+
+Prebuilt images are published to GHCR on every `v*` tag. Create a `docker-compose.yml`:
+
+```yaml
+services:
+  luogo-relay:
+    image: ghcr.io/lukehmcc/luogo-relay:latest
+    container_name: luogo-relay
+    restart: unless-stopped
+    ports:
+      - "8040:8040"
+    volumes:
+      - ./data:/data
+```
+
+```bash
+docker compose up -d
+```
+
+To update to the latest release:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+This example serves plain HTTP, which is fine for localhost development. For production, expose TLS via Caddy/nginx in front of the container, or pass `-tls-cert` and `-tls-key` (see [Flags](#flags)) and map port `8443`.
+
 ## Run
 
 ```bash
