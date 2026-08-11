@@ -7,7 +7,7 @@ import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/view/page/home.dart';
-import 'package:luogo/view/widget/server_select_dialog.dart';
+import 'package:luogo/view/widgets/server_select_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateProfilePage extends StatelessWidget {
@@ -158,11 +158,6 @@ class CreateProfilePage extends StatelessWidget {
                           icon: const Icon(Icons.expand_more),
                           label: const Text('Select server'),
                         ),
-                        if (cubit.serverUrl != null)
-                          Text(
-                            cubit.serverUrl!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
                         const SizedBox(height: 12),
                         FilledButton(
                             onPressed: cubit.savePreferences,
