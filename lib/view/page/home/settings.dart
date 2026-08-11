@@ -90,6 +90,8 @@ Widget? _statusIcon(SettingsState state) {
     SettingsServerOnline() =>
       const Icon(Icons.check_circle, color: Colors.green),
     SettingsServerOffline() => const Icon(Icons.cancel, color: Colors.red),
+    SettingsServerVersionMismatch() =>
+      const Icon(Icons.warning_amber_rounded, color: Colors.orange),
     _ => null,
   };
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +7,7 @@ import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/services/relay_client.dart';
+import 'package:luogo/services/relay_health.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,8 +45,6 @@ class SettingsCubit extends Cubit<SettingsState> {
   Timer? _debounce;
   // Stale-probe guard: only the latest probe may emit.
   int _probeSeq = 0;
-  final HttpClient _probeClient = HttpClient()
-    ..connectionTimeout = const Duration(seconds: 3);
 
   void _onUrlChanged() => _scheduleProbe();
 
@@ -63,7 +61,8 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   // Probes GET /api/health on the candidate URL. On success the URL is saved
-  // as the active relay and the running client rebinds immediately.
+  // as the active relay and the running client rebinds immediately. A relay
+  // speaking a different protocol version is rejected without rebinding.
   Future<void> _probeUrl(String url) async {
     final int seq = ++_probeSeq;
     final Uri? parsed = Uri.tryParse(url);
@@ -75,27 +74,18 @@ class SettingsCubit extends Cubit<SettingsState> {
       return;
     }
     final String normalized = normalizeRelayUrl(url);
-    try {
-      final HttpClientRequest request = await _probeClient
-          .getUrl(Uri.parse(normalized).replace(path: '/api/health'))
-          .timeout(const Duration(seconds: 3));
-      final HttpClientResponse response =
-          await request.close().timeout(const Duration(seconds: 3));
-      await response.drain<void>();
-      final bool online = response.statusCode < 400;
-      if (seq != _probeSeq || isClosed) return; // superseded
-      if (!online) {
+    final RelayProbeResult result = await probeRelayHealth(normalized);
+    if (seq != _probeSeq || isClosed) return; // superseded
+    switch (result.status) {
+      case RelayProbeStatus.online:
+        await prefs.setString('server-url', normalized);
+        _rebindRelay(normalized);
+        emitIfOpen(SettingsServerOnline());
+      case RelayProbeStatus.offline:
         emitIfOpen(SettingsServerOffline());
-        return;
-      }
-      await prefs.setString('server-url', normalized);
-      _rebindRelay(normalized);
-      emitIfOpen(SettingsServerOnline());
-    } catch (e) {
-      logger.d("Relay probe failed for $normalized: $e");
-      if (seq == _probeSeq && !isClosed) {
-        emitIfOpen(SettingsServerOffline());
-      }
+      case RelayProbeStatus.versionMismatch:
+        emitIfOpen(SettingsServerVersionMismatch(
+            serverVersion: result.serverProtocolVersion));
     }
   }
 
@@ -124,7 +114,6 @@ class SettingsCubit extends Cubit<SettingsState> {
     _debounce?.cancel();
     _probeSeq++; // invalidate in-flight probe emits
     controller.removeListener(_onUrlChanged);
-    _probeClient.close(force: true);
     return super.close();
   }
 }

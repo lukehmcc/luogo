@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/create_profile/create_profile_state.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Generates a random color so if the user doesn't pick it isn't always the same
@@ -38,6 +39,7 @@ class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
       : super(CreateProfileInitial()) {
     selectedColor = getRandomLightColor();
     pickerColor = selectedColor;
+    serverUrl = prefs.getString('server-url');
     nameController.addListener(() {
       emit(CreateProfileTextEdited());
     });
@@ -46,11 +48,21 @@ class CreateProfilePageCubit extends Cubit<CreateProfilePageState> {
   final TextEditingController nameController = TextEditingController();
   Color? selectedColor;
   Color? pickerColor;
+  // The relay this profile will talk to; null means the packaged default.
+  String? serverUrl;
 
   // Callback for when color is updated from the picker
   void onColorPicked(Color color) {
     selectedColor = color;
     emit(CreateProfileColorChanged());
+  }
+
+  // Persists the relay chosen in the server-select dialog.
+  Future<void> selectServerUrl(String url) async {
+    final String normalized = normalizeRelayUrl(url);
+    await prefs.setString('server-url', normalized);
+    serverUrl = normalized;
+    emit(CreateProfileServerUrlChanged());
   }
 
   // If everything is okay, save the settings to prefs so you can move on

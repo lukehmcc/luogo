@@ -11,3 +11,10 @@ class SettingsServerOnline extends SettingsState {}
 
 /// Nothing reachable answered at the entered URL.
 class SettingsServerOffline extends SettingsState {}
+
+/// The entered URL answered a health check but speaks a different wire
+/// protocol version than this app. The URL is not saved.
+class SettingsServerVersionMismatch extends SettingsState {
+  final int serverVersion;
+  SettingsServerVersionMismatch({required this.serverVersion});
+}

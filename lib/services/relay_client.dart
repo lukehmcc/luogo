@@ -16,6 +16,11 @@ const String kDefaultRelayUrl = String.fromEnvironment(
   defaultValue: 'https://relay.luogo.app',
 );
 
+/// Wire protocol version shared with the relay. Bump only for changes that
+/// break older clients against newer relays (or vice versa); the client
+/// refuses to operate against a relay reporting a different version.
+const int kProtocolVersion = 1;
+
 /// Normalizes a relay URL for in-app use: WebSocket-style schemes map to
 /// their HTTP equivalents because plain HTTP requests (health checks,
 /// registration) don't speak the `wss`/`ws` schemes.
@@ -131,6 +136,18 @@ sealed class RelayEvent {}
 class RelayHelloEvent extends RelayEvent {
   final String userId;
   RelayHelloEvent(this.userId);
+}
+
+/// The connected relay reports a different wire protocol version than this
+/// client. The connection is dropped: the app must not talk to a relay it
+/// can't understand.
+class RelayVersionMismatchEvent extends RelayEvent {
+  final int serverVersion;
+  final int clientVersion;
+  RelayVersionMismatchEvent({
+    required this.serverVersion,
+    required this.clientVersion,
+  });
 }
 
 class RelayMessageEvent extends RelayEvent {
@@ -657,7 +674,18 @@ class RelayClient {
   void _handleServerEvent(Map<String, dynamic> evt) {
     switch (evt['type']) {
       case 'hello':
+        // A pre-version relay omits protocolVersion; treat that as 0.
+        final int serverVersion = evt['protocolVersion'] as int? ?? 0;
         _events.add(RelayHelloEvent(evt['userId'] as String? ?? ''));
+        if (serverVersion != kProtocolVersion) {
+          logger.e(
+              "Relay protocol mismatch: client=$kProtocolVersion server=$serverVersion");
+          _events.add(RelayVersionMismatchEvent(
+            serverVersion: serverVersion,
+            clientVersion: kProtocolVersion,
+          ));
+          stopLive();
+        }
       case 'message':
         final RelayMessage message =
             RelayMessage.fromJson(evt['groupId'] as String, evt);

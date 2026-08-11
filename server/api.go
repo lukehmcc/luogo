@@ -16,6 +16,11 @@ import (
 
 const maxBodyBytes = 1 << 20
 
+// protocolVersion is the wire protocol version shared by app and relay.
+// Bump it only when a change would break older clients against newer servers
+// (or vice versa); clients refuse to operate against a mismatched relay.
+const protocolVersion = 1
+
 // Rate limit budgets. Generous enough for the app's real traffic (a 1-min
 // foreground ping per group, a ~15-min background fetch, a 5s member poll
 // while the sheet is open) while still bounding abuse.
@@ -245,7 +250,7 @@ func (s *Server) requireMember(w http.ResponseWriter, groupID string, user User)
 // --- handlers -----------------------------------------------------------
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "protocolVersion": protocolVersion})
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -604,7 +609,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	c := &Client{hub: s.hub, conn: conn, userID: user.ID, groupIDs: groupIDs, send: make(chan []byte, sendBufferSize)}
 	s.hub.register(c, groupIDs)
 
-	hello, _ := json.Marshal(map[string]any{"type": "hello", "userId": user.ID})
+	hello, _ := json.Marshal(map[string]any{"type": "hello", "userId": user.ID, "protocolVersion": protocolVersion})
 	select {
 	case c.send <- hello:
 	default:

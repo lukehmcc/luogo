@@ -244,6 +244,9 @@ func TestWebSocketFanout(t *testing.T) {
 	if evt["type"] != "hello" {
 		t.Fatalf("expected hello, got %v", evt)
 	}
+	if evt["protocolVersion"] != float64(protocolVersion) {
+		t.Fatalf("expected protocolVersion %d, got %v", protocolVersion, evt["protocolVersion"])
+	}
 
 	// Bob joins and sends a message over HTTP.
 	bob := env.server()
@@ -370,5 +373,18 @@ func TestRemoveMemberOwnerOnly(t *testing.T) {
 	if code := bob.rawDo(http.MethodPost, "/api/groups/"+g.ID+"/messages",
 		map[string]any{"ciphertext": "x"}); code != http.StatusForbidden {
 		t.Fatalf("kicked member send: expected 403, got %d", code)
+	}
+}
+
+// Health reports the wire protocol version, pre-auth.
+func TestHealthReportsProtocolVersion(t *testing.T) {
+	env := newTestEnv(t)
+	c := env.server()
+	health := c.do(http.MethodGet, "/api/health", nil)
+	if health["ok"] != true {
+		t.Fatalf("expected ok, got %v", health)
+	}
+	if health["protocolVersion"] != float64(protocolVersion) {
+		t.Fatalf("expected protocolVersion %d, got %v", protocolVersion, health["protocolVersion"])
 	}
 }

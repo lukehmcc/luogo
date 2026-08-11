@@ -5,7 +5,9 @@ import 'package:luogo/cubit/create_profile/create_profile_cubit.dart';
 import 'package:luogo/cubit/create_profile/create_profile_state.dart';
 import 'package:luogo/cubit/map/map_cubit.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/view/page/home.dart';
+import 'package:luogo/view/widget/server_select_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CreateProfilePage extends StatelessWidget {
@@ -151,6 +153,17 @@ class CreateProfilePage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 20),
+                        TextButton.icon(
+                          onPressed: () => _openServerSelect(context),
+                          icon: const Icon(Icons.expand_more),
+                          label: const Text('Select server'),
+                        ),
+                        if (cubit.serverUrl != null)
+                          Text(
+                            cubit.serverUrl!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        const SizedBox(height: 12),
                         FilledButton(
                             onPressed: cubit.savePreferences,
                             child: Text("Let's go!")),
@@ -162,5 +175,20 @@ class CreateProfilePage extends StatelessWidget {
             ),
           ),
         ));
+  }
+
+  // Collapsed server row: tapping opens the dialog, which live-validates the
+  // URL; a chosen server is persisted through the cubit.
+  Future<void> _openServerSelect(BuildContext context) async {
+    final CreateProfilePageCubit cubit = context.read<CreateProfilePageCubit>();
+    final String? chosen = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => ServerSelectDialog(
+        initialUrl: cubit.serverUrl ?? kDefaultRelayUrl,
+      ),
+    );
+    if (chosen != null) {
+      cubit.selectServerUrl(chosen);
+    }
   }
 }
