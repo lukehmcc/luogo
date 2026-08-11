@@ -8,6 +8,7 @@ import 'package:luogo/cubit/home/settings/settings_cubit.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
+import 'package:luogo/view/widgets/battery_optimization_tile.dart';
 import 'package:luogo/view/widgets/file_viewer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -69,6 +70,7 @@ class SettingsPage extends StatelessWidget {
                       },
                       child: Text("Logs")),
                   _BackgroundStatusSection(),
+                  const BatteryOptimizationTile(alwaysShow: true),
                   Text(BlocProvider.of<SettingsCubit>(context).version),
                 ],
               ),

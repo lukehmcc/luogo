@@ -78,6 +78,9 @@ class BackgroundSyncService {
           stopOnTerminate: false, // Allow Android to survive termination
           enableHeadless: true, // Enable Android headless mode
           startOnBoot: true, // Start on boot for Android
+          // Use AlarmManager (exact) instead of JobScheduler batching, which
+          // Doze/App Standby can defer for hours. Ignored on iOS.
+          forceAlarmManager: true,
           requiredNetworkType: NetworkType.ANY,
         ), (taskId) async {
       await runBackgroundSync(taskId);

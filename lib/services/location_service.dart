@@ -107,33 +107,40 @@ class LocationService {
       return;
     }
 
+    Position? position;
     try {
-      final Position position = await Geolocator.getCurrentPosition(
+      position = await Geolocator.getCurrentPosition(
         locationSettings:
             LocationSettings(timeLimit: const Duration(seconds: 10)),
       );
-      final LatLng latLng = LatLng(position.latitude, position.longitude);
-      logger.d("Attempting to update peers");
-      await _updatePeers(latLng);
-      logger.d("Updated peers");
     } catch (e) {
-      logger.e('Error fetching/sending location in background: $e');
+      logger.w("No fresh GPS fix in background: $e");
     }
-  }
 
-  // Internal location fetcher for oneshots
-  Future<void> _fetchLocation() async {
-    try {
-      final Position position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            LocationSettings(timeLimit: const Duration(seconds: 10)),
-      );
-      final LatLng latLng = LatLng(position.latitude, position.longitude);
+    final LatLng latLng;
+    if (position != null) {
+      latLng = LatLng(position.latitude, position.longitude);
       locationBox.put('local_position', HiveLatLng.fromLatLng(latLng));
-      logger.d("Local Position: ${latLng.longitude}, ${latLng.latitude}");
-    } catch (e) {
-      logger.e('Error fetching location: $e');
+    } else {
+      // No fresh lock (cold start / no sky view). Fall back to the OS-cached
+      // last known position, then to whatever we last saw in the foreground.
+      final Position? cached = await Geolocator.getLastKnownPosition();
+      if (cached != null) {
+        latLng = LatLng(cached.latitude, cached.longitude);
+      } else {
+        final HiveLatLng? last = locationBox.get('local_position');
+        if (last == null) {
+          logger.w("No cached position to send; skipping sync.");
+          return;
+        }
+        latLng = last.toLatLng();
+      }
+      logger.d("No fresh fix; sending cached position");
     }
+
+    logger.d("Attempting to update peers");
+    await _updatePeers(latLng);
+    logger.d("Updated peers");
   }
 
   // Checks & ensures permissions are granted
@@ -141,12 +148,6 @@ class LocationService {
   Future<bool> checkLocationPermissions() async {
     logger.d("Checking location permissions");
     LocationPermission permission = await Geolocator.checkPermission();
-
-    // Now that location has been allowed (hopefully), we fetch location to
-    // update the map
-    await _fetchLocation();
-
-    // Return true only if permission is granted (while or after asking)
     return permission == LocationPermission.whileInUse ||
         permission == LocationPermission.always;
   }

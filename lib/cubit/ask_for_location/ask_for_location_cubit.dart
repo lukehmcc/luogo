@@ -1,6 +1,6 @@
-import 'dart:async';
-
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:luogo/services/battery_optimization.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,39 +9,65 @@ part 'ask_for_location_state.dart';
 class AskForLocationCubit extends Cubit<AskForLocationState> {
   final SharedPreferencesWithCache prefs;
   final LocationService locationService;
-  Timer? _timer;
+  late final AppLifecycleListener _lifecycleListener;
 
   AskForLocationCubit({
     required this.prefs,
     required this.locationService,
-  }) : super(AskForLocationInitial()) {
-    // Start periodic re-check in case user enables in settings
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-      bool locationPerms = await locationService.checkLocationPermissions();
-      if (locationPerms) {
-        timer.cancel();
-        requestPerms();
-      }
-    });
+  }) : super(const AskForLocationInitial(
+          locationGranted: false,
+          batteryExempt: false,
+          checking: true,
+        )) {
+    _lifecycleListener =
+        AppLifecycleListener(onResume: () => refreshStatus());
+    // Re-check battery status when the user returns from the Android settings
+    // screen (a non-widget listener, so the page stays widget-free).
+    refreshStatus();
   }
 
   static AskForLocationCubit get(context) => BlocProvider.of(context);
 
-  Future<void> requestPerms() async {
-    // Check if we already have perms before asking again
-    bool hasPerms = await locationService.checkLocationPermissions();
-    if (!hasPerms) {
+  /// Reads the actual platform permission/battery state into the cubit state.
+  /// Also used on app resume so tiles flip X -> check once granted.
+  Future<void> refreshStatus() async {
+    if (isClosed) return;
+    emit(const AskForLocationInitial(
+      locationGranted: false,
+      batteryExempt: false,
+      checking: true,
+    ));
+    final bool locationGranted =
+        await locationService.checkLocationPermissions();
+    final bool batteryExempt = await BatteryOptimizationService.isExempt();
+    if (isClosed) return;
+    emit(AskForLocationInitial(
+      locationGranted: locationGranted,
+      batteryExempt: batteryExempt,
+    ));
+  }
+
+  Future<void> requestLocation() async {
+    if (!await locationService.checkLocationPermissions()) {
       await locationService.askForLocationPermissions();
     }
-    
-    locationService.startPeriodicUpdates();
-    prefs.setBool("location-perms-have-been-requested", true);
+    await refreshStatus();
+  }
+
+  Future<void> requestBattery() async {
+    await BatteryOptimizationService.requestExemption();
+    await refreshStatus();
+  }
+
+  Future<void> continueToApp() async {
+    await locationService.startPeriodicUpdates();
+    await prefs.setBool("location-perms-have-been-requested", true);
     emit(AskForLocationApproved());
   }
 
   @override
   Future<void> close() {
-    _timer?.cancel();
+    _lifecycleListener.dispose();
     return super.close();
   }
 }
