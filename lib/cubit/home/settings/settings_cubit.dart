@@ -79,7 +79,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     switch (result.status) {
       case RelayProbeStatus.online:
         await prefs.setString('server-url', normalized);
-        _rebindRelay(normalized);
+        await _rebindRelay(normalized);
         emitIfOpen(SettingsServerOnline());
       case RelayProbeStatus.offline:
         emitIfOpen(SettingsServerOffline());
@@ -92,13 +92,13 @@ class SettingsCubit extends Cubit<SettingsState> {
   // Rebinds the live relay client so the new server is used without
   // restarting the app. The settings page may outlive the relay client in
   // edge cases; a fresh start picks the saved URL up anyway.
-  void _rebindRelay(String url) {
+  Future<void> _rebindRelay(String url) async {
     try {
       final LocationService locationService = GetIt.I<LocationService>();
       final RelayClient? relay = locationService.relayClient;
       if (relay != null && relay.baseUrl != url) {
         logger.i("Rebinding relay to $url");
-        relay.rebindRelay(url);
+        await relay.rebindRelay(url);
       }
     } catch (e) {
       logger.d("Relay rebind skipped: $e");

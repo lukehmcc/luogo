@@ -245,10 +245,28 @@ class RelayClient {
     final String? savedToken = prefs.getString('relay-token');
     final String? savedUserId = prefs.getString('relay-user-id');
     if (savedToken != null && savedUserId != null) {
+      // Don't trust a saved session blindly: a token belongs to the relay
+      // that issued it, so one carried over from another server (or a stale
+      // deployment) is rejected with 401. Re-dialing it forever would keep
+      // live updates silently dead, so validate once and fall through to a
+      // fresh registration when the relay refuses the session.
       _token = savedToken;
       _userId = savedUserId;
-      logger.d("Restored relay session for $savedUserId");
-      return;
+      try {
+        await _request('GET', '/api/groups');
+        logger.d("Restored relay session for $savedUserId");
+        return;
+      } on RelayException catch (e) {
+        if (e.statusCode != 401 && e.statusCode != 403) {
+          logger.d("Session check failed with ${e.statusCode}, keeping it");
+          return; // transient relay/network error; retry with the session
+        }
+        logger.d("Saved relay session rejected (${e.statusCode}), clearing");
+        _token = null;
+        _userId = null;
+        unawaited(prefs.remove('relay-token'));
+        unawaited(prefs.remove('relay-user-id'));
+      }
     }
     final pending = _pendingRegistration;
     if (pending == null) return;
@@ -612,13 +630,15 @@ class RelayClient {
   /// forgets the old relay's identity (tokens are per-server), and
   /// reconnects, registering a fresh identity on the new relay. The saved
   /// 'server-url' pref must already be updated by the caller.
-  void rebindRelay(String newBaseUrl) {
+  Future<void> rebindRelay(String newBaseUrl) async {
     stopLive();
     baseUrl = normalizeRelayUrl(newBaseUrl.trim());
     _token = null;
     _userId = null;
-    unawaited(prefs.remove('relay-token'));
-    unawaited(prefs.remove('relay-user-id'));
+    // Wait for the stale session to be gone before the live loop restarts,
+    // otherwise retryConnect could restore the old relay's token.
+    await prefs.remove('relay-token');
+    await prefs.remove('relay-user-id');
     startLive();
   }
 
