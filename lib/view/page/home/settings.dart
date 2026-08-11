@@ -23,7 +23,7 @@ class SettingsPage extends StatelessWidget {
       builder: (context, state) {
         return Scaffold(
           body: SafeArea(
-            child: Column(
+            child: ListView(
               children: [
                 const ListTile(
                   title: Text(
@@ -37,7 +37,8 @@ class SettingsPage extends StatelessWidget {
                       Padding(
                           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                           child: TextField(
-                            controller: context.read<SettingsCubit>().controller,
+                            controller:
+                                context.read<SettingsCubit>().controller,
                             decoration: InputDecoration(
                               labelText: 'Relay Server URL',
                               hintText: 'https://relay.luogo.app',
@@ -48,7 +49,11 @@ class SettingsPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                  ElevatedButton(
+                _BackgroundStatusSection(),
+                const BatteryOptimizationTile(alwaysShow: true),
+                Padding(
+                  padding: EdgeInsetsGeometry.symmetric(horizontal: 50),
+                  child: ElevatedButton(
                       onPressed: () async {
                         final Directory dir =
                             await getApplicationSupportDirectory();
@@ -69,13 +74,14 @@ class SettingsPage extends StatelessWidget {
                         }
                       },
                       child: Text("Logs")),
-                  _BackgroundStatusSection(),
-                  const BatteryOptimizationTile(alwaysShow: true),
-                  Text(BlocProvider.of<SettingsCubit>(context).version),
-                ],
-              ),
+                ),
+                Center(
+                  child: Text(BlocProvider.of<SettingsCubit>(context).version),
+                ),
+              ],
             ),
-          );
+          ),
+        );
       },
     );
   }
@@ -148,9 +154,8 @@ class _BackgroundStatusSectionState extends State<_BackgroundStatusSection> {
 
   @override
   Widget build(BuildContext context) {
-    final String statusText = _fetchStatus == -1
-        ? "Unknown"
-        : _statusLabel(_fetchStatus);
+    final String statusText =
+        _fetchStatus == -1 ? "Unknown" : _statusLabel(_fetchStatus);
     final String lastSyncText = (_lastSync == null || _lastSync!.isEmpty)
         ? "Never"
         : _lastSync!.replaceFirst('T', ' ').replaceFirst(RegExp(r'\..*'), '');
@@ -188,8 +193,8 @@ class _BackgroundStatusSectionState extends State<_BackgroundStatusSection> {
                   await locationService.sendLocationUpdateOneShot();
                   await _refresh();
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text("Location sent")));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Location sent")));
                 } catch (e) {
                   logger.e("One-shot location send failed: $e");
                   if (!context.mounted) return;
