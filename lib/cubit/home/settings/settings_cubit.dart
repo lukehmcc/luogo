@@ -1,20 +1,20 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/services/location_service.dart';
+import 'package:luogo/services/relay_client.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A Cubit class for managing the settings state.
 ///
-/// Example usage:
-/// ```dart
-/// BlocProvider(
-///   create: (context) =>; SettinsgCubit(),
-///   child: YourSettingsWidget(),
-/// )
-/// ```
-
+/// Probes the relay URL live as the user types: a reachable server gets
+/// saved and the running relay client rebinds to it immediately.
 class SettingsCubit extends Cubit<SettingsState> {
   SharedPreferencesWithCache prefs;
   SettingsCubit({
@@ -30,25 +30,101 @@ class SettingsCubit extends Cubit<SettingsState> {
       version = "version $v+$b";
       emit(state);
     });
-  }
-  TextEditingController controller = TextEditingController();
-  String version = "";
-
-  void setServerUrl() {
-    if (_validateUrl(controller.text)) {
-      logger.d("valid Url time");
-      prefs.setString('server-url', controller.text);
-      emit(SettingsNewNodeSucsess());
-    } else {
-      logger.d("invald url");
-      emit(SettingsNewNodeError());
+    controller.addListener(_onUrlChanged);
+    // Show the status of the saved server as soon as Settings opens.
+    if (controller.text.trim().isNotEmpty) {
+      _scheduleProbe();
     }
   }
 
-  bool _validateUrl(String url) {
-    if (url.isEmpty) return true; // Allow empty (if needed)
-    final Uri? uri = Uri.tryParse(url);
-    return uri != null &&
-        (uri.scheme == 'http' || uri.scheme == 'https' || uri.scheme == 'wss');
+  TextEditingController controller = TextEditingController();
+  String version = "";
+
+  // Debounce typing: one cheap /api/health fetch per pause in typing.
+  static const Duration _probeDebounce = Duration(milliseconds: 500);
+  Timer? _debounce;
+  // Stale-probe guard: only the latest probe may emit.
+  int _probeSeq = 0;
+  final HttpClient _probeClient = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 3);
+
+  void _onUrlChanged() => _scheduleProbe();
+
+  void _scheduleProbe() {
+    _debounce?.cancel();
+    final String url = controller.text.trim();
+    if (url.isEmpty) {
+      _probeSeq++; // invalidate in-flight probes
+      emitIfOpen(SettingsInitial());
+      return;
+    }
+    emitIfOpen(SettingsServerChecking());
+    _debounce = Timer(_probeDebounce, () => _probeUrl(url));
+  }
+
+  // Probes GET /api/health on the candidate URL. On success the URL is saved
+  // as the active relay and the running client rebinds immediately.
+  Future<void> _probeUrl(String url) async {
+    final int seq = ++_probeSeq;
+    final Uri? parsed = Uri.tryParse(url);
+    if (parsed == null ||
+        (parsed.scheme != 'http' &&
+            parsed.scheme != 'https' &&
+            parsed.scheme != 'wss')) {
+      emitIfOpen(SettingsServerOffline());
+      return;
+    }
+    final String normalized = normalizeRelayUrl(url);
+    try {
+      final HttpClientRequest request = await _probeClient
+          .getUrl(Uri.parse(normalized).replace(path: '/api/health'))
+          .timeout(const Duration(seconds: 3));
+      final HttpClientResponse response =
+          await request.close().timeout(const Duration(seconds: 3));
+      await response.drain<void>();
+      final bool online = response.statusCode < 400;
+      if (seq != _probeSeq || isClosed) return; // superseded
+      if (!online) {
+        emitIfOpen(SettingsServerOffline());
+        return;
+      }
+      await prefs.setString('server-url', normalized);
+      _rebindRelay(normalized);
+      emitIfOpen(SettingsServerOnline());
+    } catch (e) {
+      logger.d("Relay probe failed for $normalized: $e");
+      if (seq == _probeSeq && !isClosed) {
+        emitIfOpen(SettingsServerOffline());
+      }
+    }
+  }
+
+  // Rebinds the live relay client so the new server is used without
+  // restarting the app. The settings page may outlive the relay client in
+  // edge cases; a fresh start picks the saved URL up anyway.
+  void _rebindRelay(String url) {
+    try {
+      final LocationService locationService = GetIt.I<LocationService>();
+      final RelayClient? relay = locationService.relayClient;
+      if (relay != null && relay.baseUrl != url) {
+        logger.i("Rebinding relay to $url");
+        relay.rebindRelay(url);
+      }
+    } catch (e) {
+      logger.d("Relay rebind skipped: $e");
+    }
+  }
+
+  void emitIfOpen(SettingsState state) {
+    if (!isClosed) emit(state);
+  }
+
+  @override
+  Future<void> close() {
+    _debounce?.cancel();
+    _probeSeq++; // invalidate in-flight probe emits
+    controller.removeListener(_onUrlChanged);
+    _probeClient.close(force: true);
+    return super.close();
   }
 }

@@ -16,12 +16,21 @@ const String kDefaultRelayUrl = String.fromEnvironment(
   defaultValue: 'http://localhost:8080',
 );
 
+/// Normalizes a relay URL for in-app use: WebSocket-style schemes map to
+/// their HTTP equivalents because plain HTTP requests (health checks,
+/// registration) don't speak the `wss`/`ws` schemes.
+String normalizeRelayUrl(String url) {
+  if (url.startsWith('wss://')) return 'https://${url.substring(6)}';
+  if (url.startsWith('ws://')) return 'http://${url.substring(5)}';
+  return url;
+}
+
 String resolveRelayUrl(SharedPreferencesWithCache prefs) {
   final String? configured = prefs.getString('server-url');
   if (configured != null && configured.trim().isNotEmpty) {
-    return configured.trim();
+    return normalizeRelayUrl(configured.trim());
   }
-  return kDefaultRelayUrl;
+  return normalizeRelayUrl(kDefaultRelayUrl);
 }
 
 class RelayException implements Exception {
@@ -159,7 +168,7 @@ class RelayClient {
   final SharedPreferencesWithCache prefs;
   final Box<int> cursorsBox;
   final Box<String> cacheBox;
-  final String baseUrl;
+  String baseUrl;
 
   static const String _groupsCacheKey = 'groups';
   static String _membersCacheKey(String groupId) => 'members:$groupId';
@@ -174,6 +183,7 @@ class RelayClient {
   String? _userId;
   bool _liveRunning = false;
   WebSocketChannel? _ws;
+  int _liveGeneration = 0;
 
   RelayClient({
     required this.prefs,
@@ -569,9 +579,34 @@ class RelayClient {
     unawaited(_liveLoop());
   }
 
+  /// Tears down the live connection. Safe to call when already stopped.
+  void stopLive() {
+    _liveRunning = false;
+    _liveGeneration++; // invalidate any in-flight _liveLoop
+    _ws?.sink.close();
+    _ws = null;
+  }
+
+  /// Points this client at a different relay: stops the current connection,
+  /// forgets the old relay's identity (tokens are per-server), and
+  /// reconnects, registering a fresh identity on the new relay. The saved
+  /// 'server-url' pref must already be updated by the caller.
+  void rebindRelay(String newBaseUrl) {
+    stopLive();
+    baseUrl = normalizeRelayUrl(newBaseUrl.trim());
+    _token = null;
+    _userId = null;
+    unawaited(prefs.remove('relay-token'));
+    unawaited(prefs.remove('relay-user-id'));
+    startLive();
+  }
+
   Future<void> _liveLoop() async {
+    // Generation guard: when a rebind swaps relays, any still-running loop
+    // from the old relay exits instead of fighting the new connection.
+    final int gen = _liveGeneration;
     int backoffSeconds = 1;
-    while (_liveRunning) {
+    while (_liveRunning && gen == _liveGeneration) {
       try {
         // Make sure we're authenticated before opening the WebSocket.
         if (!isAuthenticated) {
@@ -587,6 +622,11 @@ class RelayClient {
             queryParameters: {'token': _token},
           );
           final WebSocketChannel channel = WebSocketChannel.connect(uri);
+          if (gen != _liveGeneration) {
+            // Superseded mid-connect (rebind); don't adopt this socket.
+            channel.sink.close();
+            break;
+          }
           _ws = channel;
           await channel.ready;
           backoffSeconds = 1;
@@ -602,9 +642,9 @@ class RelayClient {
       } catch (e) {
         logger.e("Relay WebSocket error: $e");
       } finally {
-        _ws = null;
+        if (gen == _liveGeneration) _ws = null;
       }
-      if (!_liveRunning) break;
+      if (!_liveRunning || gen != _liveGeneration) break;
       await Future<void>.delayed(Duration(seconds: backoffSeconds));
       if (backoffSeconds < 30) backoffSeconds *= 2;
     }
@@ -641,11 +681,6 @@ class RelayClient {
       default:
         logger.d("Unknown relay event: $evt");
     }
-  }
-
-  void stopLive() {
-    _liveRunning = false;
-    _ws?.sink.close();
   }
 
   bool get isLiveRunning => _liveRunning;

@@ -18,55 +18,35 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsCubit cubit = context.read<SettingsCubit>();
-    return BlocListener<SettingsCubit, SettingsState>(
-      listener: (BuildContext context, SettingsState state) {
-        if (state is SettingsNewNodeError) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Invalid URL')));
-        }
-      },
-      child: BlocBuilder<SettingsCubit, SettingsState>(
-        builder: (context, state) {
-          return Scaffold(
-            body: SafeArea(
-              child: Column(
-                children: [
-                  const ListTile(
-                    title: Text(
-                      'Settings',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                    ),
+    return BlocBuilder<SettingsCubit, SettingsState>(
+      builder: (context, state) {
+        return Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                const ListTile(
+                  title: Text(
+                    'Settings',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: cubit.controller,
-                                    decoration: InputDecoration(
-                                      labelText: 'Relay Server URL',
-                                      border: OutlineInputBorder(),
-                                      hintText: cubit.controller.text,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.save),
-                                  onPressed: () {
-                                    cubit.setServerUrl();
-                                  },
-                                ),
-                              ],
-                            )),
-                      ],
-                    ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                          child: TextField(
+                            controller: context.read<SettingsCubit>().controller,
+                            decoration: InputDecoration(
+                              labelText: 'Relay Server URL',
+                              hintText: 'https://relay.luogo.app',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: _statusIcon(state),
+                            ),
+                          )),
+                    ],
                   ),
+                ),
                   ElevatedButton(
                       onPressed: () async {
                         final Directory dir =
@@ -94,10 +74,24 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           );
-        },
-      ),
+      },
     );
   }
+}
+
+// Suffix icon for the relay URL field, driven by the live reachability probe.
+Widget? _statusIcon(SettingsState state) {
+  return switch (state) {
+    SettingsServerChecking() => const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    SettingsServerOnline() =>
+      const Icon(Icons.check_circle, color: Colors.green),
+    SettingsServerOffline() => const Icon(Icons.cancel, color: Colors.red),
+    _ => null,
+  };
 }
 
 /// Shows whether background location sync is allowed and when it last ran,
