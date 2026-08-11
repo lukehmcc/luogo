@@ -24,7 +24,7 @@ class CircleAvatarStyledNamed extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              name[0].toUpperCase(),
+              name.isEmpty ? '?' : name[0].toUpperCase(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 40, // large font size; will be scaled to fit

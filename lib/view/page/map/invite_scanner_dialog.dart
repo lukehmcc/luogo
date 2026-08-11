@@ -21,7 +21,7 @@ class InviteScannerDialog extends StatelessWidget {
     return BlocListener<InviteScannerCubit, InviteScannerState>(
       // Us a listener here so widget state isn't handled form bloc thread
       listener: (BuildContext context, InviteScannerState inviteScannerState) {
-        // Pop once a gorup has been joined
+        // Pop once a group has been joined
         if (inviteScannerState is InviteScannerGroupLoaded) {
           if (inviteScannerState.group != null) {
             homeCubit.groupSelected(inviteScannerState.group!);
@@ -31,9 +31,23 @@ class InviteScannerDialog extends StatelessWidget {
           logger.d("Group loaded and popping context back to overlay");
           Navigator.pop(context);
         }
+        // On a bad invite, tell the user but keep the scanner open so they
+        // can scan a fresh QR.
         if (inviteScannerState is InviteScannerGroupError) {
-          Navigator.pop(context);
-          logger.d("Group error and popping context back to overlay");
+          logger.d("Group error, showing popup");
+          showDialog<void>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: const Text("Couldn't join group"),
+              content: Text(inviteScannerState.message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("OK"),
+                ),
+              ],
+            ),
+          );
         }
       },
       child: AlertDialog(

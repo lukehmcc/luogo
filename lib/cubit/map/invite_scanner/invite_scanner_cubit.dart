@@ -41,18 +41,32 @@ class InviteScannerCubit extends Cubit<InviteScannerState> {
 
   TextEditingController textController = TextEditingController();
 
+  // Guards against duplicate processing: the QR camera fires onDetect
+  // repeatedly for the same code, and a single-use invite must only be
+  // consumed once.
+  bool _processing = false;
+  String? _lastProcessedPayload;
+
   // Once the invite has been scanned on this client you can then join the group.
   Future<void> handleInvitePayload(String welcomeMessage) async {
     log(welcomeMessage);
 
-    // Parse the invite payload: groupId, inviteToken, and groupKey
-    final parsed = GroupCrypto.parseInvitePayload(welcomeMessage);
-    if (parsed == null) {
-      emit(InviteScannerGroupError('Incorrect group invite'));
+    // Ignore the repeated onDetect events for the same code, and any call
+    // still in flight from a previous one.
+    if (_processing || welcomeMessage == _lastProcessedPayload) {
       return;
     }
-
+    _processing = true;
+    _lastProcessedPayload = welcomeMessage;
     try {
+      // Parse the invite payload: groupId, inviteToken, and groupKey
+      final parsed = GroupCrypto.parseInvitePayload(welcomeMessage);
+      if (parsed == null) {
+        if (isClosed) return;
+        emit(InviteScannerGroupError('Incorrect group invite'));
+        return;
+      }
+
       // Store the group key so we can decrypt messages in this group
       await groupCrypto.storeKey(parsed.groupId, parsed.groupKey);
 
@@ -61,6 +75,8 @@ class InviteScannerCubit extends Cubit<InviteScannerState> {
         parsed.groupId,
         parsed.inviteToken,
       );
+
+      if (isClosed) return;
 
       // Now make sure to set the group and update UI
       final GroupInfo groupInfo =
@@ -72,7 +88,11 @@ class InviteScannerCubit extends Cubit<InviteScannerState> {
       locationService.pingPeers();
     } catch (e) {
       logger.e(e);
-      emit(InviteScannerGroupError(e.toString()));
+      if (isClosed) return;
+      emit(InviteScannerGroupError(
+          (e is RelayException) ? e.message : e.toString()));
+    } finally {
+      _processing = false;
     }
   }
 }
