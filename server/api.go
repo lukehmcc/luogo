@@ -106,6 +106,8 @@ func NewServer(store *Store, hub *Hub, maxLog int) *Server {
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("GET /", s.handleRoot)
+
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 
 	mux.HandleFunc("POST /api/users", s.handleCreateUser)
@@ -244,6 +246,10 @@ func (s *Server) requireMember(w http.ResponseWriter, groupID string, user User)
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"Hello from luogo-relay :)": true})
 }
 
 type createUserReq struct {

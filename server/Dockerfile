@@ -8,5 +8,5 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/luogo-relay .
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 COPY --from=build /out/luogo-relay /usr/local/bin/luogo-relay
-EXPOSE 8080
+EXPOSE 8040
 ENTRYPOINT ["/usr/local/bin/luogo-relay"]

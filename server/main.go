@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "listen address")
+	addr := flag.String("addr", ":8040", "listen address")
 	dbPath := flag.String("db", "./luogo-relay.db", "sqlite database path")
 	maxLog := flag.Int("max-log", 500, "messages kept per group")
 	cert := flag.String("tls-cert", "", "path to TLS certificate (enables HTTPS)")
