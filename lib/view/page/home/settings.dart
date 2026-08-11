@@ -28,24 +28,18 @@ class SettingsPage extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
                 ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                          child: TextField(
-                            controller:
-                                context.read<SettingsCubit>().controller,
-                            decoration: InputDecoration(
-                              labelText: 'Relay Server URL',
-                              hintText: 'https://relay.luogo.app',
-                              border: const OutlineInputBorder(),
-                              suffixIcon: _statusIcon(state),
-                            ),
-                          )),
-                    ],
-                  ),
-                ),
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                    child: TextField(
+                      controller:
+                          context.read<SettingsCubit>().controller,
+                      decoration: InputDecoration(
+                        labelText: 'Relay Server URL',
+                        hintText: 'https://relay.luogo.app',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: _statusIcon(state),
+                      ),
+                    )),
                 _BackgroundStatusSection(state: state),
                 BatteryOptimizationTile(
                   exempt: state.batteryExempt,

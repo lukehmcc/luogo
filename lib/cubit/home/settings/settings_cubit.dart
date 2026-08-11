@@ -29,10 +29,10 @@ class SettingsCubit extends Cubit<SettingsState> {
     _lifecycleListener =
         AppLifecycleListener(onResume: () => refreshBattery());
 
-    String? serverUrl = prefs.getString('server-url');
-    if (serverUrl != null) {
-      controller.text = serverUrl;
-    }
+    final String saved = prefs.getString('server-url') ?? '';
+    controller.text = saved.trim().isNotEmpty
+        ? saved
+        : normalizeRelayUrl(kDefaultRelayUrl);
     PackageInfo.fromPlatform().then((PackageInfo packageInfo) {
       String v = packageInfo.version;
       String b = packageInfo.buildNumber;
@@ -105,7 +105,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (seq != _probeSeq || isClosed) return; // superseded
     switch (result.status) {
       case RelayProbeStatus.online:
-        await prefs.setString('server-url', normalized);
+        // Don't cement the build-time default: a future release may ship a
+        // different default and users who never chose a server should get it.
+        if (normalized != normalizeRelayUrl(kDefaultRelayUrl)) {
+          await prefs.setString('server-url', normalized);
+        }
         await _rebindRelay(normalized);
         _probe = _ServerProbe.online;
         emitIfOpen(_currentState());
