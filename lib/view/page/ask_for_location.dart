@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/ask_for_location/ask_for_location_cubit.dart';
@@ -68,15 +70,17 @@ class AskForLocationPermissionPage extends StatelessWidget {
                         onRequest: cubit.requestLocation,
                       ),
 
-                      // Reduced battery optimization prompt (recommended)
-                      PermissionTile(
-                        title: "Reduced battery optimization",
-                        subtitle:
-                            "Optimized mode delays delivery. Disable for better reliability.",
-                        granted: state.batteryExempt,
-                        checking: state.checking,
-                        onRequest: cubit.requestBattery,
-                      ),
+                      // Reduced battery optimization prompt (Android only,
+                      // recommended)
+                      if (Platform.isAndroid)
+                        PermissionTile(
+                          title: "Reduced battery optimization",
+                          subtitle: "Optimized mode can delay background "
+                              "location sharing. Recommended for reliability.",
+                          granted: state.batteryExempt,
+                          checking: state.checking,
+                          onRequest: cubit.requestBattery,
+                        ),
 
                       const SizedBox(height: 10),
 

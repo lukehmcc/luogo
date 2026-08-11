@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:luogo/services/battery_optimization.dart';
 
@@ -49,6 +51,10 @@ class _BatteryOptimizationTileState extends State<BatteryOptimizationTile>
 
   @override
   Widget build(BuildContext context) {
+    // Battery optimization is an Android concept; never show this on iOS or
+    // other platforms.
+    if (!Platform.isAndroid) return const SizedBox.shrink();
+
     final bool? exempt = _exempt;
     if (exempt == null) return const SizedBox.shrink();
     if (exempt && !widget.alwaysShow) return const SizedBox.shrink();
