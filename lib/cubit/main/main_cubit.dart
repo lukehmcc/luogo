@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
@@ -19,8 +21,12 @@ import 'package:path/path.dart' as path;
 /// Initializes shared preferences, Hive, the relay client, group crypto and
 /// the location service, then hands everything to the UI.
 class MainCubit extends Cubit<MainState> {
-  MainCubit() : super(MainStateInitial());
+  MainCubit() : super(MainStateInitial()) {
+    _lifecycleListener =
+        AppLifecycleListener(onResume: () => _onResumed());
+  }
 
+  late final AppLifecycleListener _lifecycleListener;
   late final SharedPreferencesWithCache prefs;
   late final LocationService locationService;
   late final RelayClient relayClient;
@@ -64,5 +70,27 @@ class MainCubit extends Cubit<MainState> {
       logger.e('Initialization error: $e');
       emit(MainStateError(e.toString()));
     }
+  }
+
+  // A suspended iOS app misses WebSocket pushes while the socket can still
+  // look connected; catch up on anything we missed when we come back.
+  void _onResumed() {
+    try {
+      final LocationService locationService = GetIt.I<LocationService>();
+      final RelayClient? relay = locationService.relayClient;
+      if (relay == null) return;
+      if (!relay.isLiveRunning) {
+        relay.startLive();
+      }
+      unawaited(relay.resyncAll());
+    } catch (e) {
+      logger.e("Resume resync failed: $e");
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _lifecycleListener.dispose();
+    return super.close();
   }
 }

@@ -1,25 +1,34 @@
 import 'dart:async';
 
+import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/services/battery_optimization.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/services/relay_client.dart';
 import 'package:luogo/services/relay_health.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Which relay-probe stage the settings screen is currently in.
+enum _ServerProbe { initial, checking, online, offline, mismatch }
+
 /// A Cubit class for managing the settings state.
 ///
 /// Probes the relay URL live as the user types: a reachable server gets
-/// saved and the running relay client rebinds to it immediately.
+/// saved and the running relay client rebinds to it immediately. Also owns
+/// the background/battery status so Settings stays widget-free.
 class SettingsCubit extends Cubit<SettingsState> {
   SharedPreferencesWithCache prefs;
   SettingsCubit({
     required this.prefs,
-  }) : super(SettingsInitial()) {
+  }) : super(const SettingsInitial()) {
+    _lifecycleListener =
+        AppLifecycleListener(onResume: () => refreshBattery());
+
     String? serverUrl = prefs.getString('server-url');
     if (serverUrl != null) {
       controller.text = serverUrl;
@@ -35,10 +44,25 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (controller.text.trim().isNotEmpty) {
       _scheduleProbe();
     }
+    // Surface the current scheduling/battery status right away.
+    refreshBackgroundStatus();
+    refreshBattery();
   }
+
+  late final AppLifecycleListener _lifecycleListener;
 
   TextEditingController controller = TextEditingController();
   String version = "";
+
+  // Current probe stage + server protocol version, for state rebuilds.
+  _ServerProbe _probe = _ServerProbe.initial;
+  int _serverVersion = 0;
+
+  // Non-server status fields.
+  bool _batteryExempt = false;
+  int _backgroundFetchStatus = -1;
+  String? _lastSync;
+  bool _checkingBackground = false;
 
   // Debounce typing: one cheap /api/health fetch per pause in typing.
   static const Duration _probeDebounce = Duration(milliseconds: 500);
@@ -53,10 +77,12 @@ class SettingsCubit extends Cubit<SettingsState> {
     final String url = controller.text.trim();
     if (url.isEmpty) {
       _probeSeq++; // invalidate in-flight probes
-      emitIfOpen(SettingsInitial());
+      _probe = _ServerProbe.initial;
+      emitIfOpen(_currentState());
       return;
     }
-    emitIfOpen(SettingsServerChecking());
+    _probe = _ServerProbe.checking;
+    emitIfOpen(_currentState());
     _debounce = Timer(_probeDebounce, () => _probeUrl(url));
   }
 
@@ -70,7 +96,8 @@ class SettingsCubit extends Cubit<SettingsState> {
         (parsed.scheme != 'http' &&
             parsed.scheme != 'https' &&
             parsed.scheme != 'wss')) {
-      emitIfOpen(SettingsServerOffline());
+      _probe = _ServerProbe.offline;
+      emitIfOpen(_currentState());
       return;
     }
     final String normalized = normalizeRelayUrl(url);
@@ -80,12 +107,15 @@ class SettingsCubit extends Cubit<SettingsState> {
       case RelayProbeStatus.online:
         await prefs.setString('server-url', normalized);
         await _rebindRelay(normalized);
-        emitIfOpen(SettingsServerOnline());
+        _probe = _ServerProbe.online;
+        emitIfOpen(_currentState());
       case RelayProbeStatus.offline:
-        emitIfOpen(SettingsServerOffline());
+        _probe = _ServerProbe.offline;
+        emitIfOpen(_currentState());
       case RelayProbeStatus.versionMismatch:
-        emitIfOpen(SettingsServerVersionMismatch(
-            serverVersion: result.serverProtocolVersion));
+        _probe = _ServerProbe.mismatch;
+        _serverVersion = result.serverProtocolVersion;
+        emitIfOpen(_currentState());
     }
   }
 
@@ -105,6 +135,79 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
   }
 
+  /// Re-reads the OS background-fetch task status and last sync time.
+  Future<void> refreshBackgroundStatus() async {
+    _checkingBackground = true;
+    emitIfOpen(_currentState());
+    int status = -1;
+    try {
+      status = await BackgroundFetch.status;
+    } catch (e) {
+      logger.e("BackgroundFetch.status failed: $e");
+    }
+    _backgroundFetchStatus = status;
+    _lastSync = prefs.getString('last-background-sync');
+    _checkingBackground = false;
+    emitIfOpen(_currentState());
+  }
+
+  /// Re-reads whether Android battery optimization is disabled for the app.
+  Future<void> refreshBattery() async {
+    _batteryExempt = await BatteryOptimizationService.isExempt();
+    emitIfOpen(_currentState());
+  }
+
+  /// Opens the Android prompt to whitelist the app against battery
+  /// optimization, then re-reads the result.
+  Future<void> requestBatteryExemption() async {
+    await BatteryOptimizationService.requestExemption();
+    await refreshBattery();
+  }
+
+  /// Manual "send location now" used by the settings background section.
+  Future<void> sendLocationNow() async {
+    final LocationService locationService = GetIt.I<LocationService>();
+    await locationService.sendLocationUpdateOneShot();
+    await refreshBackgroundStatus();
+  }
+
+  // Builds the full state from the current probe stage + status fields.
+  SettingsState _currentState() {
+    return switch (_probe) {
+      _ServerProbe.initial => SettingsInitial(
+          batteryExempt: _batteryExempt,
+          backgroundFetchStatus: _backgroundFetchStatus,
+          lastBackgroundSync: _lastSync,
+          checkingBackground: _checkingBackground,
+        ),
+      _ServerProbe.checking => SettingsServerChecking(
+          batteryExempt: _batteryExempt,
+          backgroundFetchStatus: _backgroundFetchStatus,
+          lastBackgroundSync: _lastSync,
+          checkingBackground: _checkingBackground,
+        ),
+      _ServerProbe.online => SettingsServerOnline(
+          batteryExempt: _batteryExempt,
+          backgroundFetchStatus: _backgroundFetchStatus,
+          lastBackgroundSync: _lastSync,
+          checkingBackground: _checkingBackground,
+        ),
+      _ServerProbe.offline => SettingsServerOffline(
+          batteryExempt: _batteryExempt,
+          backgroundFetchStatus: _backgroundFetchStatus,
+          lastBackgroundSync: _lastSync,
+          checkingBackground: _checkingBackground,
+        ),
+      _ServerProbe.mismatch => SettingsServerVersionMismatch(
+          serverVersion: _serverVersion,
+          batteryExempt: _batteryExempt,
+          backgroundFetchStatus: _backgroundFetchStatus,
+          lastBackgroundSync: _lastSync,
+          checkingBackground: _checkingBackground,
+        ),
+    };
+  }
+
   void emitIfOpen(SettingsState state) {
     if (!isClosed) emit(state);
   }
@@ -114,6 +217,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     _debounce?.cancel();
     _probeSeq++; // invalidate in-flight probe emits
     controller.removeListener(_onUrlChanged);
+    _lifecycleListener.dispose();
     return super.close();
   }
 }

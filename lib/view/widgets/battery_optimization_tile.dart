@@ -1,63 +1,35 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:luogo/services/battery_optimization.dart';
 
 /// Shows whether Android battery optimization is disabled for the app and
 /// offers a one-tap path to whitelist ("Unrestricted") it.
 ///
-/// Hidden entirely once the app is exempt unless [alwaysShow] is set (used in
-/// Settings so the status always stays visible).
-class BatteryOptimizationTile extends StatefulWidget {
-  const BatteryOptimizationTile({super.key, this.alwaysShow = false});
+/// Pure presentation: status and the request action come from the settings
+/// cubit. Hidden entirely once exempt unless [alwaysShow] is set (used in
+/// Settings so the status always stays visible). Android only.
+class BatteryOptimizationTile extends StatelessWidget {
+  const BatteryOptimizationTile({
+    super.key,
+    required this.exempt,
+    required this.onRequest,
+    this.alwaysShow = false,
+  });
+
+  /// Whether the app is currently exempt from battery optimization.
+  final bool exempt;
+
+  /// Invoked when the user taps Allow.
+  final VoidCallback onRequest;
 
   final bool alwaysShow;
-
-  @override
-  State<BatteryOptimizationTile> createState() =>
-      _BatteryOptimizationTileState();
-}
-
-class _BatteryOptimizationTileState extends State<BatteryOptimizationTile>
-    with WidgetsBindingObserver {
-  bool? _exempt;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refresh();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Re-check when the user returns from the Android settings screen.
-    if (state == AppLifecycleState.resumed) {
-      _refresh();
-    }
-  }
-
-  Future<void> _refresh() async {
-    final bool exempt = await BatteryOptimizationService.isExempt();
-    if (!mounted) return;
-    setState(() => _exempt = exempt);
-  }
 
   @override
   Widget build(BuildContext context) {
     // Battery optimization is an Android concept; never show this on iOS or
     // other platforms.
     if (!Platform.isAndroid) return const SizedBox.shrink();
-
-    final bool? exempt = _exempt;
-    if (exempt == null) return const SizedBox.shrink();
-    if (exempt && !widget.alwaysShow) return const SizedBox.shrink();
+    if (exempt && !alwaysShow) return const SizedBox.shrink();
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -74,12 +46,7 @@ class _BatteryOptimizationTileState extends State<BatteryOptimizationTile>
                   'Allow "Unrestricted" battery usage for reliable updates.',
         ),
         trailing: FilledButton(
-          onPressed: exempt
-              ? null
-              : () async {
-                  await BatteryOptimizationService.requestExemption();
-                  await _refresh();
-                },
+          onPressed: exempt ? null : onRequest,
           child: const Text('Allow'),
         ),
       ),
