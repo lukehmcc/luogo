@@ -19,6 +19,7 @@ void main() async {
   String logPath = p.join((await getApplicationSupportDirectory()).path, "log");
   logger = Logger(
       filter: ProductionFilter(),
+      printer: PrettyPrinter(dateTimeFormat: DateTimeFormat.dateAndTime),
       output: MultiOutput([
         AdvancedFileOutput(
           path: logPath, // Path to log folder

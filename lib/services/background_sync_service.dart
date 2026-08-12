@@ -5,6 +5,8 @@ import 'package:logger/logger.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/services/relay_client.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class BackgroundSyncService {
   @pragma('vm:entry-point')
@@ -20,7 +22,15 @@ class BackgroundSyncService {
 
     // Initialize logger for headless task since main() isn't called
     try {
-      logger = Logger(printer: PrettyPrinter());
+      logger = Logger(
+        printer: PrettyPrinter(dateTimeFormat: DateTimeFormat.dateAndTime),
+        output: MultiOutput([
+          AdvancedFileOutput(
+            path: p.join((await getApplicationSupportDirectory()).path, "log"),
+          ),
+          ConsoleOutput(),
+        ]),
+      );
       await runBackgroundSync(taskId);
     } catch (e) {
       debugPrint("[BackgroundFetch] Headless task failed: $e");
