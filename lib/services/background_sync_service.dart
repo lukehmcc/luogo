@@ -60,6 +60,13 @@ class BackgroundSyncService {
         return;
       }
 
+      // Pull before push: there's no live WebSocket in this isolate, so
+      // anything peers sent while we were dead must be fetched here or the
+      // pins stay stale until the app reopens. fetchGroups falls back to
+      // cache; resyncAll catches per-group failures.
+      await relay.fetchGroups();
+      await relay.resyncAll();
+
       await locationService.sendLocationUpdateOneShot();
 
       // Give incoming-message listeners a moment to finish. Keep it short:
@@ -68,8 +75,8 @@ class BackgroundSyncService {
 
       // Remember the last successful sync so the settings screen can show it.
       try {
-        await locationService.prefs
-            .setString('last-background-sync', DateTime.now().toIso8601String());
+        await locationService.prefs.setString(
+            'last-background-sync', DateTime.now().toIso8601String());
       } catch (e) {
         logger.e("Failed to record background sync time: $e");
       }
