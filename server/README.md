@@ -46,6 +46,11 @@ services:
 docker compose up -d
 ```
 
+The container working directory is `/`, so the default `-db ./data/luogo-relay.db`
+resolves to `/data/luogo-relay.db`, which lands on the mounted volume. If you don't
+mount a volume (or point `-db` elsewhere), the database lives in the container's
+ephemeral layer and is destroyed the next time the container is recreated.
+
 To update to the latest release:
 
 ```bash
@@ -69,7 +74,7 @@ This example serves plain HTTP, which is fine for localhost development. For pro
 | Flag | Default | Description |
 | --- | --- | --- |
 | `-addr` | `:8080` | listen address |
-| `-db` | `./luogo-relay.db` | SQLite database path (WAL mode) |
+| `-db` | `./data/luogo-relay.db` | SQLite database path (WAL mode; parent dir is created if missing) |
 | `-max-log` | `500` | messages retained per group |
 | `-tls-cert` / `-tls-key` | — | enable HTTPS (both required) |
 

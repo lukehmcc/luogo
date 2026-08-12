@@ -3,3 +3,4 @@ luogo-relay.db
 luogo-relay.db-shm
 luogo-relay.db-wal
 server
+data/
