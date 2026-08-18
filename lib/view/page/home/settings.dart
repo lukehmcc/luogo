@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:luogo/cubit/home/settings/settings_cubit.dart';
 import 'package:luogo/cubit/home/settings/settings_state.dart';
 import 'package:luogo/main.dart';
+import 'package:luogo/view/page/home/nerd_stats_page.dart';
 import 'package:luogo/view/widgets/battery_optimization_tile.dart';
 import 'package:luogo/view/widgets/file_viewer.dart';
 import 'package:path_provider/path_provider.dart';
@@ -48,28 +49,49 @@ class SettingsPage extends StatelessWidget {
                       context.read<SettingsCubit>().requestBatteryExemption(),
                 ),
                 Padding(
-                  padding: EdgeInsetsGeometry.symmetric(horizontal: 50),
-                  child: ElevatedButton(
-                      onPressed: () async {
-                        final Directory dir =
-                            await getApplicationSupportDirectory();
-                        final String logPath =
-                            p.join(dir.path, 'log', 'latest.log');
-                        logger.d("reading log from: $logPath");
-                        if (context.mounted) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => Scaffold(
-                                appBar: AppBar(title: const Text('Log Viewer')),
-                                body: SafeArea(
-                                  child: TextFileViewer(filePath: logPath),
-                                ),
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                            onPressed: () async {
+                              final Directory dir =
+                                  await getApplicationSupportDirectory();
+                              final String logPath =
+                                  p.join(dir.path, 'log', 'latest.log');
+                              logger.d("reading log from: $logPath");
+                              if (context.mounted) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => Scaffold(
+                                      appBar:
+                                          AppBar(title: const Text('Log Viewer')),
+                                      body: SafeArea(
+                                        child:
+                                            TextFileViewer(filePath: logPath),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text("Logs")),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => NerdStatsPage(
+                                prefs: context.read<SettingsCubit>().prefs,
                               ),
-                            ),
-                          );
-                        }
-                      },
-                      child: Text("Logs")),
+                            ));
+                          },
+                          child: const Text("Nerd Stats"),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Center(
                   child: Text(BlocProvider.of<SettingsCubit>(context).version),

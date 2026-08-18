@@ -36,7 +36,6 @@
   <string>This app needs photos access to get QR code from photo library. If a user gets texted a QR code for example, being able to pull it from the library is helpful.</string>
   <key>UIBackgroundModes</key>
   <array>
-    <string>processing</string>
     <string>fetch</string>
     <string>location</string>
   </array>

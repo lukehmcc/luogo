@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logger/logger.dart';
 import 'package:luogo/cubit/main/main_cubit.dart';
 import 'package:luogo/services/background_sync_service.dart';
+import 'package:luogo/services/significant_change_service.dart';
 import 'package:luogo/view/page/init_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -31,6 +32,9 @@ void main() async {
   logger.d(await dir.list().map((e) => e.path).join('\n'));
   // Configure background sync
   await BackgroundSyncService.configure();
+
+  // Register method channel for iOS significant-location-change sync
+  await SignificantChangeService.register();
 
   runApp(
     BlocProvider(

@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:luogo/main.dart';
 import 'package:luogo/services/location_service.dart';
 import 'package:luogo/services/relay_client.dart';
+import 'package:luogo/services/sync_history.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -39,8 +40,17 @@ class BackgroundSyncService {
     BackgroundFetch.finish(taskId);
   }
 
-  static Future<void> runBackgroundSync(String taskId) async {
-    logger.i("[BackgroundFetch] Sync started for task: $taskId");
+  /// Core relay sync: pull new messages, push our current position, and
+  /// record the run. Shared by the periodic background-fetch task and the
+  /// iOS significant-change trigger so both keep the same data and cursors.
+  /// [source] labels how the sync was triggered for the Nerd Stats page.
+  static Future<void> runRelaySync({required String source}) async {
+    if (_syncRunning) {
+      logger.d("Relay sync already running, skipping (source=$source)");
+      return;
+    }
+    _syncRunning = true;
+    logger.i("Relay sync started (source=$source)");
     try {
       LocationService? locationService;
       try {
@@ -56,7 +66,7 @@ class BackgroundSyncService {
       // throttled by the OS.
       final RelayClient? relay = locationService.relayClient;
       if (relay == null || !await relay.isReachable()) {
-        logger.w("[BackgroundFetch] Relay unreachable, skipping sync");
+        logger.w("Relay unreachable, skipping sync (source=$source)");
         return;
       }
 
@@ -77,14 +87,24 @@ class BackgroundSyncService {
       try {
         await locationService.prefs.setString(
             'last-background-sync', DateTime.now().toIso8601String());
+        await SyncHistory.record(locationService.prefs, source);
       } catch (e) {
         logger.e("Failed to record background sync time: $e");
       }
 
-      logger.i("Background sync completed successfully");
+      logger.i("Relay sync completed (source=$source)");
     } catch (e) {
-      logger.e("Background sync failed: $e");
+      logger.e("Relay sync failed (source=$source): $e");
+    } finally {
+      _syncRunning = false;
     }
+  }
+
+  static bool _syncRunning = false;
+
+  static Future<void> runBackgroundSync(String taskId) async {
+    logger.i("[BackgroundFetch] Sync started for task: $taskId");
+    await runRelaySync(source: 'periodic');
   }
 
   static Future<void> configure() async {
