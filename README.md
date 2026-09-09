@@ -86,10 +86,31 @@ cd luogo/
 ./flutterw run --flavor dev # Make sure to run with the flutter wrapper so everyone is on the same flutter version
 ```
 
-To build a production apk:
+### Build Variants (Android)
+
+| Flavor | Build Type | Application ID | Use Case |
+|--------|-----------|----------------|----------|
+| `dev` | `debug` | `app.luogo.app.dev.debug` | JIT development (flutter run) |
+| `dev` | `release` | `app.luogo.app.dev` | AOT testing, sideloading |
+| `prod` | `debug` | `app.luogo.app` | Internal testing |
+| `prod` | `release` | `app.luogo.app` | Play Store release |
+
+`devDebug` and `devRelease` have different application IDs so both can be installed simultaneously.
+
+To build a production app bundle:
 
 ```bash
 ./flutterw build appbundle --flavor prod
+```
+
+To build dev variants:
+
+```bash
+# JIT debug build (for development)
+./flutterw build apk --flavor dev --debug
+
+# AOT release build (for testing/sideloading)
+./flutterw build apk --flavor dev --release
 ```
 
 Feel free to [submit an issue](https://github.com/lukehmcc/luogo/issues) or [PR](https://github.com/lukehmcc/luogo/pulls) if you run into any issues. I'm here to collaborate and make the best app possible!

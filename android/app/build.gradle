@@ -65,6 +65,11 @@ android {
             dimension "default"
             resValue "string", "app_name", "Luogo (dev)"
             applicationIdSuffix ".dev"
+            buildTypes {
+                debug {
+                    applicationIdSuffix ".debug"
+                }
+            }
         }
         prod {
             dimension "default"
