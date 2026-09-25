@@ -54,10 +54,29 @@ class BottomSheetInfoModal extends StatelessWidget {
           SizedBox(
             height: 10,
           ),
-          Text(
-              "Last seen: ${DateFormat('EEE, HH:mm').format(DateTime.fromMillisecondsSinceEpoch(userState.ts))}"),
+          Text("Last seen: ${_lastSeenLabel(userState.ts)}"),
         ],
       ),
     );
+  }
+
+  /// Formats a "last seen" timestamp: "Today" for the current calendar day,
+  /// weekday + time while it is within the last 5 days, otherwise a date (with
+  /// the year only when it predates the current year).
+  static String _lastSeenLabel(int ts) {
+    final DateTime seen = DateTime.fromMillisecondsSinceEpoch(ts);
+    final DateTime now = DateTime.now();
+    final bool sameDay = seen.year == now.year &&
+        seen.month == now.month &&
+        seen.day == now.day;
+    if (sameDay) {
+      return 'Today, ${DateFormat('HH:mm').format(seen)}';
+    }
+    if (now.difference(seen).inDays < 5) {
+      return DateFormat('EEE, HH:mm').format(seen);
+    }
+    final String pattern =
+        seen.year == now.year ? 'd MMM, HH:mm' : 'd MMM yyyy, HH:mm';
+    return DateFormat(pattern).format(seen);
   }
 }
