@@ -589,7 +589,18 @@ class RelayClient {
     }
   }
 
-  Future<void> resyncAll() async {
+  Future<void>? _resyncAllFuture;
+
+  /// Resyncs every known group. Concurrent callers (e.g. app resume racing a
+  /// WebSocket (re)connect) share a single in-flight run instead of starting
+  /// parallel fetches over the same cursors.
+  Future<void> resyncAll() {
+    return _resyncAllFuture ??= _doResyncAll().whenComplete(() {
+      _resyncAllFuture = null;
+    });
+  }
+
+  Future<void> _doResyncAll() async {
     for (final RelayGroup group in _groups) {
       try {
         await resyncGroup(group.id);

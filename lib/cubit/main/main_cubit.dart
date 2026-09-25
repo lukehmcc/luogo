@@ -22,8 +22,11 @@ import 'package:path/path.dart' as path;
 /// the location service, then hands everything to the UI.
 class MainCubit extends Cubit<MainState> {
   MainCubit() : super(MainStateInitial()) {
-    _lifecycleListener =
-        AppLifecycleListener(onResume: () => _onResumed());
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () => _onResumed(),
+      onPause: () => _wasBackgrounded = true,
+      onHide: () => _wasBackgrounded = true,
+    );
   }
 
   late final AppLifecycleListener _lifecycleListener;
@@ -31,6 +34,11 @@ class MainCubit extends Cubit<MainState> {
   late final LocationService locationService;
   late final RelayClient relayClient;
   late final GroupCrypto crypto;
+
+  /// Set when the app actually leaves the foreground (pause/hide), as opposed
+  /// to transient inactive states like a permission dialog. Only a real
+  /// backgrounding warrants tearing down and re-dialing the relay socket.
+  bool _wasBackgrounded = false;
 
   Future<void> initializeApp() async {
     try {
@@ -73,14 +81,18 @@ class MainCubit extends Cubit<MainState> {
   }
 
   // A suspended iOS app misses WebSocket pushes while the socket can still
-  // look connected; catch up on anything we missed when we come back.
+  // look connected; catch up on anything we missed when we come back. After a
+  // real backgrounding, force a fresh socket rather than trusting the stale
+  // one to eventually error out.
   void _onResumed() {
     try {
       final LocationService locationService = GetIt.I<LocationService>();
       final RelayClient? relay = locationService.relayClient;
       if (relay == null) return;
-      if (!relay.isLiveRunning) {
-        relay.startLive();
+      if (_wasBackgrounded) {
+        _wasBackgrounded = false;
+        relay.stopLive(); // close the possibly half-open socket
+        relay.startLive(); // fresh authenticated socket + connect-time resync
       }
       unawaited(relay.resyncAll());
     } catch (e) {
